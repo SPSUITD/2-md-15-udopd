@@ -47,28 +47,16 @@ class Controller:
         match key:
             case self.keymap.up:
                 self.move_keys.up = False
-                if self.move_keys.down:
-                    self.direction.y = -1
-                else:
-                    self.direction.y = 0
+                self.direction.y = -1 if self.move_keys.down else 0
             case self.keymap.down:
                 self.move_keys.down = False
-                if self.move_keys.up:
-                    self.direction.y = 1
-                else:
-                    self.direction.y = 0
+                self.direction.y = 1 if self.move_keys.up else 0
             case self.keymap.left:
                 self.move_keys.left = False
-                if self.move_keys.right:
-                    self.direction.x = 1
-                else:
-                    self.direction.x = 0
+                self.direction.x = 1 if self.move_keys.right else 0
             case self.keymap.right:
                 self.move_keys.right = False
-                if self.move_keys.left:
-                    self.direction.x = -1
-                else:
-                    self.direction.x = 0
+                self.direction.x = -1 if self.move_keys.left else 0
         self.direction.normalize()
 
     def on_update(self):

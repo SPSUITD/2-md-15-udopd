@@ -3,12 +3,13 @@ from src.logger import Logger
 
 class GameObject:
     name: str
-    rotation: float
 
-    def __init__(self, sprite, name = "gameObject", position = Vector(0, 0), rotation = 0.0):
+    def __init__(self, sprite, name = "gameObject", position = Vector(0, 0), rotation = 0.0, size = 1):
         self.name = name
         self.sprite = sprite
-        self.rotation = rotation
+        self.sprite.angle = rotation
+        self.sprite.height *= size
+        self.sprite.width *= size
         self.sprite.center_x = position.x
         self.sprite.center_y = position.y
 
@@ -21,4 +22,4 @@ class GameObject:
 
     def __del__(self):
         class_name = self.__class__.__name__
-        Logger().Message(f'{class_name} уничтожен')
+        #Logger().Message(f'{class_name} уничтожен')

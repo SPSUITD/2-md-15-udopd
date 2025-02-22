@@ -1,4 +1,5 @@
 import arcade
+from src.logger import Logger
 
 class KeyMap:    
     def __init__(self, left = 'A', up = 'W', right = 'D', down = 'S'):
@@ -11,3 +12,4 @@ class KeyMap:
                 self.right = getattr(arcade.key, right)
             if hasattr(arcade.key, down):
                 self.down = getattr(arcade.key, down)
+        #Logger().Message(f'init KeyMap[{self.left}, {self.up}, {self.right}, {self.down}]')
