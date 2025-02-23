@@ -1,5 +1,4 @@
 import math
-from src.logger import Logger
 
 class Vector:
     x: float
@@ -17,7 +16,3 @@ class Vector:
         if l != 0:
             self.x /= l
             self.y /= l
-    
-    def __del__(self):  
-        class_name = self.__class__.__name__
-        Logger().Message(f'{class_name} уничтожен')

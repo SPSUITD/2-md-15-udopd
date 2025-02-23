@@ -1,9 +1,10 @@
 from src.keymap import KeyMap
 from src.gameobject import GameObject
 from src.vector import Vector
-from src.logger import Logger
+from src.spawner import Spawner
 
-class Controller:
+class PlayerController:
+    spawner: Spawner
     keymap: KeyMap
     game_object: GameObject
     direction: Vector
@@ -20,12 +21,13 @@ class Controller:
             self.up = False
             self.down = False
 
-    def __init__(self, speed, keymap, game_object):
+    def __init__(self, speed, keymap, game_object, spawner = None):
         self.direction = Vector(0, 0)
         self.game_object = game_object
         self.speed = speed
         self.keymap = keymap
         self.move_keys = self.Keys()
+        self.spawner = spawner
 
     def on_key_press(self, key):
         match key:
@@ -41,6 +43,9 @@ class Controller:
             case self.keymap.right:
                 self.move_keys.right = True
                 self.direction.x = 1
+            case self.keymap.spawn:
+                if self.spawner is not None:
+                    self.spawner.spawn(self.game_object.get_position())
         self.direction.normalize()
 
     def on_key_release(self, key):
@@ -61,4 +66,3 @@ class Controller:
 
     def on_update(self):
         self.game_object.move(self.direction, self.speed)
-        #Logger().Message(f'dir: [{self.direction.x}, {self.direction.y}]')

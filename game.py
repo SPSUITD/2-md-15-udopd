@@ -1,15 +1,17 @@
 import arcade
 from src.logger import Logger
-from src.config import _ as TEXTURES
+from src.config import TEXTURES
+from src.abstractobject import AbstractObject
 from src.gameobject import GameObject
+from src.player import Player
+from src.spawner import Spawner
 from src.vector import Vector
 from src.keymap import KeyMap
-from src.controller import Controller
 
-SPRITE_SIZE = 64
+SPRITE_SIZE = 32
 WINDOW_WIDTH = 15*SPRITE_SIZE
 WINDOW_HEIGHT = 13*SPRITE_SIZE
-WINDOW_TITLE = "Bomberman"
+WINDOW_TITLE = "B0mberm@n"
 
 class GameView(arcade.Window):
     def __init__(self):
@@ -23,18 +25,21 @@ class GameView(arcade.Window):
         self.sprite_list = arcade.SpriteList()
         self.controllers = list()
         self.__camera_setup()
+
+        self.box = AbstractObject(
+            sprite_path=TEXTURES.BOX,
+            name='box',
+            size=0.5
+            )
         
-        self.player = self.__player_setup()
-        self.player.controller = Controller(speed=5,
-                                            keymap=KeyMap(),
-                                            game_object=self.player)
-        self.controllers.append(self.player.controller)
+        self.box1 = AbstractObject(
+            sprite_path=TEXTURES.BOX1,
+            name='box',
+            size=0.5
+            )
         
-        self.player1 = self.__player_setup(position=Vector(-40, 40))
-        self.player1.controller = Controller(speed=3,
-                                            keymap=KeyMap('LEFT', 'UP', 'RIGHT', 'DOWN'),
-                                            game_object=self.player1)
-        self.controllers.append(self.player1.controller)
+        self.__new__player__()
+        self.__new__player__(name='player2', keymap=KeyMap('LEFT', 'UP', 'RIGHT', 'DOWN', 'BACKSPACE'), spawn_object=self.box1)
         
     def __camera_setup(self):
         self.camera = arcade.camera.Camera2D()
@@ -42,17 +47,28 @@ class GameView(arcade.Window):
         self.camera.position = (0, 0)
         self.game_objects.append(self.camera)
 
-    def __player_setup(self, name = "player", position = Vector(0, 0), rotation = 0, size = 1):
-        player = GameObject(
+    def spawn(self, object: AbstractObject, position: Vector):
+        new_go = GameObject(sprite=arcade.Sprite(object.sprite_path),
+                            name=object.name,
+                            size=object.size,
+                            position=position)
+        self.game_objects.append(new_go)
+        self.sprite_list.append(new_go.sprite)
+
+    def __new__player__(self, name = "player", position = Vector(0, 0), rotation = 0, size = 1, speed = 5, keymap = KeyMap(), spawn_object = None):
+        player = Player(
             sprite=arcade.Sprite(arcade.load_texture(TEXTURES.PLAYER_TEXTURE)),
             name=name,
             size=size,
             rotation=rotation,
-            position=position
+            position=position,
+            speed=speed,
+            keymap=keymap,
+            spawner=Spawner(external_spawn=self.spawn, abstract_object=spawn_object) if spawn_object is not None else None
         )
         self.game_objects.append(player)
         self.sprite_list.append(player.sprite)
-        return player
+        self.controllers.append(player.controller)
 
     def on_key_press(self, key, modifiers):
         for c in self.controllers:
