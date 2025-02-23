@@ -8,7 +8,6 @@ class PlayerController:
     keymap: KeyMap
     game_object: GameObject
     direction: Vector
-    speed: float
     class Keys:
         left: bool
         right: bool
@@ -21,10 +20,9 @@ class PlayerController:
             self.up = False
             self.down = False
 
-    def __init__(self, speed, keymap, game_object, spawner = None):
+    def __init__(self, keymap, game_object, spawner = None):
         self.direction = Vector(0, 0)
         self.game_object = game_object
-        self.speed = speed
         self.keymap = keymap
         self.move_keys = self.Keys()
         self.spawner = spawner

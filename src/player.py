@@ -6,5 +6,5 @@ class Player(GameObject):
     controller: PlayerController
 
     def __init__(self, sprite, name = "gameObject", position = Vector(0, 0), rotation = 0.0, size = 1, speed = 0, keymap = None, spawner = None):
-        GameObject.__init__(self, sprite, name, position, rotation, size)
-        self.controller = PlayerController(speed, keymap, super(), spawner)
+        GameObject.__init__(self, sprite, name, position, rotation, size, speed)
+        self.controller = PlayerController(keymap, super(), spawner)
