@@ -1,5 +1,4 @@
 from src.vector import Vector
-from src.logger import Logger
 
 class GameObject:
     name: str
@@ -14,13 +13,6 @@ class GameObject:
         self.sprite.width *= size
         self.set_position(position)
 
-    def copy(self):
-        return GameObject(name=self.name, 
-                          sprite=self.sprite,
-                          position=self.get_position(), 
-                          rotation=self.sprite.angle, 
-                          size=self.size)
-
     def move(self, v: Vector, speed: float):
         self.sprite.center_x += v.x * speed
         self.sprite.center_y += v.y * speed
@@ -34,7 +26,3 @@ class GameObject:
 
     def rotate(self, a: float):
         self.sprite.angle += a
-
-    def __del__(self):
-        class_name = self.__class__.__name__
-        #Logger().Message(f'{class_name} уничтожен')
