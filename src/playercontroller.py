@@ -65,4 +65,4 @@ class PlayerController:
         self.direction.normalize()
 
     def on_update(self):
-        self.game_object.move(self.direction, self.speed)
+        self.game_object.move(self.direction)
