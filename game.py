@@ -1,79 +1,117 @@
 import arcade
-from src.logger import Logger
-from src.config import TEXTURES
-from src.abstractobject import AbstractObject
-from src.gameobject import GameObject
-from src.playercontroller import PlayerController
-from src.player import Player
-from src.spawner import Spawner
-from src.vector import Vector
-from src.keymap import KeyMap
 
-SPRITE_SIZE = 64
-WINDOW = Vector(15*SPRITE_SIZE, 13*SPRITE_SIZE)
-WINDOW_TITLE = "B0mberm@n"
+from src.logger import Logger
+import src.config as cnf
+from src.abstractobject import AbstractObject
+from src.playercontroller import PlayerController, KeyMap, Spawner
+from src.player import Player, GameObject
+from src.vector import Vector
 
 class GameView(arcade.Window):
     def __init__(self):
-        super().__init__(WINDOW.x, WINDOW.y, WINDOW_TITLE)
+        super().__init__(cnf.WINDOW_SIZE.x, cnf.WINDOW_SIZE.y, cnf.WINDOW_TITLE)
         self.background_color = arcade.csscolor.LIGHT_GREEN
+        self.center_window()
 
     def setup(self):
         self.logger = Logger()
 
-        self.game_objects = list()
         self.sprite_list = arcade.SpriteList()
         self.controllers = list()
         self.__camera_setup()
+        self.setup_abstract_objects()
+        self.__create_map__()
 
-        self.box = AbstractObject(
-            sprite_path=TEXTURES.BOX,
-            name='box',
+        self.__new_player__(keymap=cnf.PLAYER_1_KEYMAP, 
+                            spawn_object=self.bomb, 
+                            size=0.5,
+                            texture_path=cnf.TEXTURES.PLAYER_1, 
+                            position=Vector(cnf.SPRITE_SIZE, (cnf.GRID_SIZE.y-2)*cnf.SPRITE_SIZE))
+        
+        self.__new_player__(keymap=cnf.PLAYER_2_KEYMAP, 
+                            spawn_object=self.bomb, 
+                            speed=7, 
+                            size=0.5,
+                            texture_path=cnf.TEXTURES.PLAYER_2,
+                            position=Vector((cnf.GRID_SIZE.x-2)*cnf.SPRITE_SIZE, cnf.SPRITE_SIZE))
+    
+    def setup_abstract_objects(self):
+        self.bomb = AbstractObject(
+            sprite_path=cnf.TEXTURES.BOMB,
+            name='bomb',
             size=0.5
             )
         
-        self.box1 = AbstractObject(
-            sprite_path=TEXTURES.BOX1,
-            name='box',
+        self.wall = AbstractObject(
+            sprite_path=cnf.TEXTURES.WALL,
+            name='wall',
             size=0.5
             )
         
-        self.__new__player__()
-        self.__new__player__(name='player2', keymap=KeyMap('LEFT', 'UP', 'RIGHT', 'DOWN', 'BACKSPACE'), spawn_object=self.box1, speed=3)
-        
+        self.block = AbstractObject(
+            sprite_path=cnf.TEXTURES.BLOCK,
+            name='block',
+            size=0.5
+            )
+
     def __camera_setup(self):
         self.camera = arcade.camera.Camera2D()
-        self.camera.use()
-        self.camera.position = (0, 0)
-        self.game_objects.append(self.camera)
+        self.camera.position = ((cnf.GRID_SIZE.x-1)*cnf.SPRITE_SIZE/2, (cnf.GRID_SIZE.y-1)*cnf.SPRITE_SIZE/2)
 
     def spawn(self, object: AbstractObject, position: Vector):
-        new_go = GameObject(sprite=arcade.Sprite(object.sprite_path),
-                            name=object.name,
-                            size=object.size,
-                            position=position)
-        self.game_objects.append(new_go)
-        self.sprite_list.append(new_go.sprite)
+        size = cnf.SPRITE_SIZE
+        map_pos = Vector(round(position.x / size), round(position.y / size))
+        if self.map[map_pos.x][map_pos.y] != '1':
+            new_go = GameObject(sprite=arcade.Sprite(object.sprite_path, cnf.SIZE),
+                                name=object.name,
+                                size=object.size,
+                                position=Vector(map_pos.x * size, map_pos.y * size))
+            self.sprite_list.append(new_go.sprite)
+            self.logger.Message(f"{object.name} spawn at [{map_pos.x}, {map_pos.y}]")
+        else:
+            self.logger.Warning(f"invalid spawn {object.name}")
 
-    def __new__player__(self, name = "player", position = Vector(0, 0), rotation = 0, size = 1, speed = 5, keymap = KeyMap(), spawn_object = None):
-        player = Player(
-            sprite=arcade.Sprite(arcade.load_texture(TEXTURES.PLAYER_TEXTURE)),
-            name=name,
-            size=size,
-            rotation=rotation,
-            position=position,
-            speed=speed,
-            keymap=keymap,
-            spawner=Spawner(external_spawn=self.spawn, abstract_object=spawn_object) if spawn_object is not None else None
-        )
-        controller = PlayerController(
-            keymap=keymap,
-            spawner=Spawner(external_spawn=self.spawn, abstract_object=spawn_object) if spawn_object is not None else None,
-            player=player
-        )
-        self.game_objects.append(player)
-        self.sprite_list.append(player.sprite)
-        self.controllers.append(controller)
+    def __create_map__(self):
+        width = cnf.GRID_SIZE.x
+        height = cnf.GRID_SIZE.y
+        size = cnf.SPRITE_SIZE
+        self.map = [['0'] * height for i in range(width)]
+
+        for x in range(width):
+            for y in range(height):
+                if x == width-1 or x == 0 or y == 0 or y == height-1:
+                    self.spawn(self.wall, Vector(x*size, y*size))
+                    self.map[x][y] = '1'
+                elif x % 2 == 0 and y % 2 == 0:
+                    self.spawn(self.wall, Vector(x*size, y*size))
+                    self.map[x][y] = '1'
+
+    def __new_player__(self, texture_path = cnf.TEXTURES.PLAYER_1,
+                    name = "player", 
+                    position = Vector(0, 0), 
+                    rotation = 0, 
+                    size = 1, 
+                    speed = 5, 
+                    keymap = KeyMap(), 
+                    spawn_object = None):
+        if keymap.is_valid:
+            player = Player(
+                    sprite=arcade.Sprite(arcade.load_texture(texture_path), cnf.SIZE),
+                    name=name,
+                    size=size,
+                    rotation=rotation,
+                    position=position,
+                    speed=speed*cnf.SIZE
+                )
+            controller = PlayerController(
+                keymap=keymap,
+                spawner=Spawner(external_spawn=self.spawn, abstract_object=spawn_object) if spawn_object is not None else None,
+                player=player
+            )
+            self.sprite_list.append(player.sprite)
+            self.controllers.append(controller)
+        else:
+            self.logger.Error(('Невалидная карта кнопок', '__new_player__', 60, '> Карта кнопок принимает код несуществующей кнопки'))
 
     def on_key_press(self, key, modifiers):
         for c in self.controllers:

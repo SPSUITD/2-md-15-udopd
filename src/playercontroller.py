@@ -1,3 +1,4 @@
+from arcade import key as Key
 from src.keymap import KeyMap
 from src.player import Player
 from src.vector import Vector
@@ -9,13 +10,13 @@ class PlayerController:
     player: Player
     direction: Vector
 
-    def __init__(self, keymap, player, spawner = None):
+    def __init__(self, keymap: KeyMap, player: Player, spawner = None):
         self.direction = Vector(0, 0)
         self.player = player
         self.keymap = keymap
         self.spawner = spawner
 
-    def on_key_press(self, key):
+    def on_key_press(self, key: Key):
         match key:
             case self.keymap.up.key:
                 self.keymap.up.is_pressed = True
@@ -34,7 +35,7 @@ class PlayerController:
                     self.spawner.spawn(self.player.position)
         self.direction.normalize()
 
-    def on_key_release(self, key):
+    def on_key_release(self, key: Key):
         match key:
             case self.keymap.up.key:
                 self.keymap.up.is_pressed = False
