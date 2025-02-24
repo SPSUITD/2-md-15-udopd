@@ -3,19 +3,19 @@ from src.logger import Logger
 from src.config import TEXTURES
 from src.abstractobject import AbstractObject
 from src.gameobject import GameObject
+from src.playercontroller import PlayerController
 from src.player import Player
 from src.spawner import Spawner
 from src.vector import Vector
 from src.keymap import KeyMap
 
-SPRITE_SIZE = 32
-WINDOW_WIDTH = 15*SPRITE_SIZE
-WINDOW_HEIGHT = 13*SPRITE_SIZE
+SPRITE_SIZE = 64
+WINDOW = Vector(15*SPRITE_SIZE, 13*SPRITE_SIZE)
 WINDOW_TITLE = "B0mberm@n"
 
 class GameView(arcade.Window):
     def __init__(self):
-        super().__init__(WINDOW_WIDTH, WINDOW_HEIGHT, WINDOW_TITLE)
+        super().__init__(WINDOW.x, WINDOW.y, WINDOW_TITLE)
         self.background_color = arcade.csscolor.LIGHT_GREEN
 
     def setup(self):
@@ -39,7 +39,7 @@ class GameView(arcade.Window):
             )
         
         self.__new__player__()
-        self.__new__player__(name='player2', keymap=KeyMap('LEFT', 'UP', 'RIGHT', 'DOWN', 'BACKSPACE'), spawn_object=self.box1)
+        self.__new__player__(name='player2', keymap=KeyMap('LEFT', 'UP', 'RIGHT', 'DOWN', 'BACKSPACE'), spawn_object=self.box1, speed=3)
         
     def __camera_setup(self):
         self.camera = arcade.camera.Camera2D()
@@ -66,9 +66,14 @@ class GameView(arcade.Window):
             keymap=keymap,
             spawner=Spawner(external_spawn=self.spawn, abstract_object=spawn_object) if spawn_object is not None else None
         )
+        controller = PlayerController(
+            keymap=keymap,
+            spawner=Spawner(external_spawn=self.spawn, abstract_object=spawn_object) if spawn_object is not None else None,
+            player=player
+        )
         self.game_objects.append(player)
         self.sprite_list.append(player.sprite)
-        self.controllers.append(player.controller)
+        self.controllers.append(controller)
 
     def on_key_press(self, key, modifiers):
         for c in self.controllers:
