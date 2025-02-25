@@ -1,4 +1,8 @@
+from src.gameobject import GameObject
+
 class Controllable():
+    gameObject: GameObject
+
     def on_update(self):
         pass
 

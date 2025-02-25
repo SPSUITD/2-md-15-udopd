@@ -9,7 +9,7 @@ B = "\033[34m MESSAGE:"
 Y = "\033[33m WARNING:"
 
 class Logger:
-    __s = "[logger]: "
+    __s = "[logger]:"
 
     def Error(self, msg):
         print(f"{self.__s}{R}{V} {msg[0]} {W} [{datetime.datetime.now().time()}]:")

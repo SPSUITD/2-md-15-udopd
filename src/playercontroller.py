@@ -3,17 +3,16 @@ from src.keymap import KeyMap
 from src.player import Player, GameObject, BombSpecifications
 from src.spawner import Spawner, AbstractObject
 from src.vector import Vector, zero_vector
-from src.controller import Controllable
+from src.controllable import Controllable
 
 class PlayerController(Controllable):
     spawner: Spawner
     keymap: KeyMap
-    player: Player
     direction: Vector
 
     def __init__(self, keymap: KeyMap, player: Player, spawner = None):
         self.direction = zero_vector()
-        self.player = player
+        self.gameObject = player
         self.keymap = keymap
         self.spawner = spawner
 
@@ -33,7 +32,7 @@ class PlayerController(Controllable):
                 self.direction.x = 1
             case self.keymap.spawn:
                 if self.spawner is not None:
-                    self.spawner.spawn(self.player.position, self.player.bomb_specifications)
+                    self.spawner.spawn(self.gameObject)
         self.direction.normalize()
 
     def on_key_release(self, key: Key):
@@ -53,4 +52,5 @@ class PlayerController(Controllable):
         self.direction.normalize()
 
     def on_update(self):
-        self.player.move(self.direction)
+        if isinstance(self.gameObject, Player):
+            self.gameObject.move(self.direction)

@@ -28,3 +28,6 @@ def to_global_vector(map_vector: Vector):
 
 def zero_vector():
     return Vector(0, 0)
+
+def distance(v1: Vector, v2: Vector):
+    return math.sqrt((v1.x - v2.x) ** 2 + (v1.y - v2.y) ** 2)
