@@ -12,7 +12,7 @@ class PlayerController(Controllable):
     direction: Vector
 
     def __init__(self, keymap: KeyMap, player: Player, spawner = None):
-        self.direction = Vector(0, 0)
+        self.direction = zero_vector()
         self.player = player
         self.keymap = keymap
         self.spawner = spawner

@@ -99,7 +99,7 @@ class GameView(arcade.Window):
 
     def __new_player__(self, texture_path = cnf.TEXTURES.PLAYER_1,
                     name = "player", 
-                    position = zero_vector, 
+                    position = zero_vector(), 
                     rotation = 0, 
                     size = 1, 
                     speed = 4, 

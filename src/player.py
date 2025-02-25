@@ -3,7 +3,7 @@ from src.vector import Vector, zero_vector
 from src.bombspecifications import BombSpecifications
 
 class Player(GameObject):
-    def __init__(self, sprite, name = "player", position = zero_vector, rotation = 0.0, size = 1, speed = 0):
+    def __init__(self, sprite, name = "player", position = zero_vector(), rotation = 0.0, size = 1, speed = 0):
         super().__init__(sprite, name, position, rotation, size)
         self.speed = speed
         self.bomb_specifications = BombSpecifications(1, 100, 3)

@@ -5,7 +5,7 @@ class GameObject():
     size: float
     speed: float
 
-    def __init__(self, sprite, name = "gameObject", position = zero_vector, rotation = 0.0, size = 1):
+    def __init__(self, sprite, name = "gameObject", position = zero_vector(), rotation = 0.0, size = 1):
         self.name = name
         self.size = size
         self.sprite = sprite

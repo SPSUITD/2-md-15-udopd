@@ -26,6 +26,5 @@ def to_global_vector(map_vector: Vector):
     size = cnf.SPRITE_SIZE
     return Vector(map_vector.x * size, map_vector.y * size)
 
-@property
 def zero_vector():
     return Vector(0, 0)
