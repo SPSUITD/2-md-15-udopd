@@ -237,10 +237,23 @@ class GameView(arcade.Window):
         self.logger.Message(f"======= Map is created =======")
 
     def __spawn_box__(self, pos):
-        if pos.x == 1 and pos.y == cnf.GRID_SIZE[1]-2:
+        safe_zone = (pos.x == 1 and pos.y == cnf.GRID_SIZE[1]-2 or #player1 safezone
+            pos.x == 1 and pos.y == cnf.GRID_SIZE[1]-3 or
+            pos.x == 1 and pos.y == cnf.GRID_SIZE[1]-4 or
+            pos.x == 2 and pos.y == cnf.GRID_SIZE[1]-2 or
+            pos.x == 3 and pos.y == cnf.GRID_SIZE[1]-2 or
+            
+            pos.x == cnf.GRID_SIZE[0]-2 and pos.y == 1 or #player2 safezone
+            pos.x == cnf.GRID_SIZE[0]-3 and pos.y == 1 or
+            pos.x == cnf.GRID_SIZE[0]-4 and pos.y == 1 or
+            pos.x == cnf.GRID_SIZE[0]-2 and pos.y == 2 or
+            pos.x == cnf.GRID_SIZE[0]-2 and pos.y == 3)
+
+        if safe_zone:
             pass
         else:
-            self.spawn(self.block, pos, None)
+            if random.randint(0, 10) < 9:
+                self.spawn(self.block, pos, None)
 
     def __new_player__(self, texture_path = cnf.TEXTURES.PLAYER_1,
                     name = "player", 
