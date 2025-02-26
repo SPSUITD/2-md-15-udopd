@@ -2,14 +2,12 @@ from src.vector import Vector, zero_vector
 
 class GameObject():
     name: str
-    speed: float
+    position: Vector
+    sprite: None
 
-    def __init__(self, sprite, name = "gameObject", position = zero_vector(), rotation = 0.0, size = 1):
+    def __init__(self, sprite, name = "gameObject", position = zero_vector()):
         self.name = name
         self.sprite = sprite
-        self.sprite.angle = rotation
-        self.sprite.height *= size
-        self.sprite.width *= size
         self.position = position
 
     @property
@@ -20,6 +18,3 @@ class GameObject():
     def position(self, position: Vector):
         self.sprite.center_x = position.x
         self.sprite.center_y = position.y
-
-    def rotate(self, a: float):
-        self.sprite.angle += a

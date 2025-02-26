@@ -1,16 +1,20 @@
 import arcade
 
-from src.logger import Logger
 import src.config as cnf
-from src.config import SYMBOLS as symb, BOMB_CONFIG as bc
-from src.playercontroller import PlayerController, KeyMap, Spawner, AbstractObject, GameObject, Player, BombSpecifications
+from src.logger import Logger
+from src.keymap import KeyMap
+from src.config import SYMBOLS as symb
+from src.playercontroller import PlayerController
+from src.player import Player
+from src.abstractobject import AbstractObject
+from src.bombspecifications import BombSpecifications
+from src.gameobject import GameObject
 from src.bomb import Bomb
 from src.vector import Vector, to_map_vector, to_global_vector, zero_vector, distance
-from src.bombcontroller import BombController
 
 class GameView(arcade.Window):
     def __init__(self):
-        super().__init__(cnf.WINDOW_SIZE.x, cnf.WINDOW_SIZE.y, cnf.WINDOW_TITLE)
+        super().__init__(cnf.WINDOW_SIZE[0], cnf.WINDOW_SIZE[1], cnf.WINDOW_TITLE)
         self.background_color = arcade.csscolor.LIGHT_GREEN
         self.center_window()
 
@@ -19,98 +23,146 @@ class GameView(arcade.Window):
 
         self.map = None
         self.sprite_list = arcade.SpriteList()
+        self.bombs = []
+        self.explosion_list = []
         self.controllers = []
         self.__camera_setup__()
         self.__setup_abstract_objects__()
         self.__create_map__()
-        self.__new_player__(keymap=cnf.PLAYER_1_KEYMAP, 
-                            spawn_object=self.bomb, 
-                            size=0.5, #заглушка, так как исходные текстуры персонажей бОльшего размера, чем тайлы
-                            texture_path=cnf.TEXTURES.PLAYER_1, 
-                            position=to_global_vector(Vector(1, cnf.GRID_SIZE.y-2)))
         
-        '''self.__new_player__(keymap=cnf.PLAYER_2_KEYMAP, 
-                            spawn_object=self.bomb, 
-                            size=0.5, #заглушка, так как исходные текстуры персонажей бОльшего размера, чем тайлы
-                            texture_path=cnf.TEXTURES.PLAYER_2,
-                            position=to_global_vector(Vector(cnf.GRID_SIZE.x-2, 1)))'''
+        self.__new_player__(keymap=KeyMap(
+            left=cnf.PLAYER_1_KEYMAP.left,
+            right=cnf.PLAYER_1_KEYMAP.right,
+            up=cnf.PLAYER_1_KEYMAP.up,
+            down=cnf.PLAYER_1_KEYMAP.down,
+            spawn=cnf.PLAYER_1_KEYMAP.spawn
+        ), 
+                    name='player1',
+                    texture_path=cnf.TEXTURES.PLAYER_1, 
+                    position=to_global_vector(Vector(1, cnf.GRID_SIZE[1]-2)),
+                    bomb_specifications = self.bomb)
+        
+        self.__new_player__(keymap=KeyMap(
+            left=cnf.PLAYER_2_KEYMAP.left,
+            right=cnf.PLAYER_2_KEYMAP.right,
+            up=cnf.PLAYER_2_KEYMAP.up,
+            down=cnf.PLAYER_2_KEYMAP.down,
+            spawn=cnf.PLAYER_2_KEYMAP.spawn
+        ), 
+                    name='player2',
+                    texture_path=cnf.TEXTURES.PLAYER_2,
+                    position=to_global_vector(Vector(cnf.GRID_SIZE[0]-2, 1)),
+                    bomb_specifications = self.bomb)
     
     def __setup_abstract_objects__(self):
-        self.bomb = AbstractObject(
-            sprite_path=cnf.TEXTURES.BOMB,
-            name='bomb',
-            size=0.5
-            )
+        self.bomb = BombSpecifications(
+            cnf.BOMB_CONFIG.count,
+            cnf.BOMB_CONFIG.lifetime,
+            cnf.BOMB_CONFIG.size,
+            cnf.TEXTURES.BOMB, 
+            cnf.SYMBOLS.bomb)
         
         self.wall = AbstractObject(
             sprite_path=cnf.TEXTURES.WALL,
             name='wall',
-            size=0.5
+            symbol=cnf.SYMBOLS.wall
             )
         
         self.block = AbstractObject(
             sprite_path=cnf.TEXTURES.BLOCK,
             name='block',
-            size=0.5
+            symbol=cnf.SYMBOLS.block
+            )
+        
+        self.explosion = AbstractObject(
+            sprite_path=cnf.TEXTURES.EXPLOSION,
+            name='explosion',
+            symbol=cnf.SYMBOLS.empty
             )
 
     def __camera_setup__(self):
         self.camera = arcade.camera.Camera2D()
-        self.camera.position = ((cnf.GRID_SIZE.x-1)*cnf.SPRITE_SIZE/2, (cnf.GRID_SIZE.y-1)*cnf.SPRITE_SIZE/2)
+        self.camera.position = ((cnf.GRID_SIZE[0]-1)*cnf.SPRITE_SIZE/2, (cnf.GRID_SIZE[1]-1)*cnf.SPRITE_SIZE/2)
 
-    def spawn(self, object: AbstractObject, position: Vector, bomb_specification: BombSpecifications = None, bomb_list: list = None):
-        map_pos = to_map_vector(position)
-        if self.map[map_pos.x][map_pos.y] == symb.empty:
-
-            if object.name == 'bomb':
-                new_go = Bomb(sprite=arcade.Sprite(object.sprite_path, cnf.SIZE),
-                              name=object.name,
-                              size=object.size,
-                              position=to_global_vector(map_pos),
-                              lifetime=bomb_specification.lifetime,
-                              explosion_size=bomb_specification.size,
-                              lst=bomb_list)
-                self.controllers.append(BombController(new_go, self.explose))
-                self.map[map_pos.x][map_pos.y] = symb.bomb
-                bomb_list.append(new_go)
-            else:
-                new_go = GameObject(sprite=arcade.Sprite(object.sprite_path, cnf.SIZE),
+    def spawn(self, object: AbstractObject, pos: Vector, player: Player):
+        if self.map[pos.x][pos.y] == symb.empty:
+            new_go = GameObject(sprite=arcade.Sprite(object.sprite_path, cnf.SIZE),
                                     name=object.name,
-                                    size=object.size,
-                                    position=to_global_vector(map_pos))
-                self.map[map_pos.x][map_pos.y] = symb.wall
-
+                                    position=to_global_vector(pos))
+            
+            if isinstance(object, BombSpecifications):
+                bomb = Bomb(new_go, object)
+                player.bomb_list.append(bomb)
+                bomb.parent = player
+                self.bombs.append(bomb)
+                new_go = bomb
+            
             self.sprite_list.append(new_go.sprite)
-            self.logger.Message(f"{object.name} spawn at [{map_pos.x}, {map_pos.y}]")
+            self.map[pos.x][pos.y] = object.symbol
+            self.logger.Message(f"{object.name} spawn at [{pos.x}, {pos.y}]")
+            
         else:
-            self.logger.Warning(f"invalid spawn {object.name} at [{map_pos.x}, {map_pos.y}]")
+            self.logger.Message(f"{object.name} spawn at [{pos.x}, {pos.y}]")
+            
+    def explose(self, bomb: Bomb):
+        bomb.parent.bomb_list.remove(bomb)
 
-    def explose(self, bomb_controller: BombController):
-        if isinstance(bomb_controller.gameObject, Bomb):
-            if bomb_controller.gameObject in bomb_controller.gameObject.parent_list:
-                bomb_controller.gameObject.parent_list.remove(bomb_controller.gameObject)
-
-        self.controllers.remove(bomb_controller)
-        bomb_map_position = to_map_vector(bomb_controller.gameObject.position)
+        self.bombs.remove(bomb)
+        bomb_map_position = to_map_vector(bomb.position)
         self.logger.Message(f"bomb explose at [{bomb_map_position.x}, {bomb_map_position.y}]")
-
-        for c in self.controllers:
-            temp_contr_pos = to_map_vector(c.gameObject.position)
-            is_vis = self.is_visible(bomb_map_position, temp_contr_pos)
-            in_radius = distance(bomb_map_position, temp_contr_pos) < bomb_controller.gameObject.explosion_size
-            if (is_vis and in_radius):
-                if isinstance(c, BombController):
-                        self.logger.Message(f"bomb at [{bomb_map_position.x}, {bomb_map_position.y}] " + 
-                                            f"find the bomb at [{temp_contr_pos.x}, {temp_contr_pos.y}]")
-                        c.explose()
-                elif isinstance(c, PlayerController):
-                    self.controllers.remove(c) #заглушка
-                    self.logger.Message(f"bomb at [{bomb_map_position.x}, {bomb_map_position.y}] " + 
-                                        f"kill the {c.gameObject.name} at [{temp_contr_pos.x}, {temp_contr_pos.y}]")
-                    
-
         self.map[bomb_map_position.x][bomb_map_position.y] = symb.empty
-        self.sprite_list.remove(bomb_controller.gameObject.sprite)
+        self.sprite_list.remove(bomb.sprite)
+        self.__spawn_explosion__(bomb_map_position, bomb.explosion_size)
+        
+        #ударная волна
+        for b in self.bombs:
+            temp_contr_pos = to_map_vector(b.position)
+            is_vis = self.is_visible(bomb_map_position, temp_contr_pos)
+            in_radius = distance(bomb_map_position, temp_contr_pos) < bomb.explosion_size
+            if is_vis and in_radius and b != bomb:
+                self.logger.Message(f"bomb at [{bomb_map_position.x}, {bomb_map_position.y}] " + 
+                                    f"explose the bomb at [{temp_contr_pos.x}, {temp_contr_pos.y}]")
+                self.explose(b)
+                    
+        for c in self.controllers:
+            temp_contr_pos = to_map_vector(c.player.position)
+            is_vis = self.is_visible(bomb_map_position, temp_contr_pos)
+            in_radius = distance(bomb_map_position, temp_contr_pos) < bomb.explosion_size
+            if (is_vis and in_radius):
+                self.controllers.remove(c) #заглушка
+                self.logger.Message(f"bomb at [{bomb_map_position.x}, {bomb_map_position.y}] " + 
+                                    f"kill the {c.player.name} at [{temp_contr_pos.x}, {temp_contr_pos.y}]")
+
+    def __one_explosion__(self, pos: Vector):
+        new_go = GameObject(sprite=arcade.Sprite(self.explosion.sprite_path, cnf.SIZE),
+                            name=self.explosion.name,
+                            position=to_global_vector(pos))
+        new_go.lifetime = 20
+        self.sprite_list.append(new_go.sprite)
+        self.explosion_list.append(new_go)
+
+    def __spawn_explosion__(self, pos: Vector, size: int):
+        for x in range(0, size):
+            if pos.x - x >= 0:
+                if self.map[pos.x - x][pos.y] != cnf.SYMBOLS.empty:
+                    break
+                self.__one_explosion__(Vector(pos.x - x, pos.y))
+        for x in range(1, size):
+            if pos.x + x < len(self.map):
+                if self.map[pos.x + x][pos.y] != cnf.SYMBOLS.empty:
+                    break
+                self.__one_explosion__(Vector(pos.x + x, pos.y))
+
+        for y in range(0, size):
+            if pos.y - y >= 0:
+                if self.map[pos.x][pos.y - y] != cnf.SYMBOLS.empty:
+                    break
+                self.__one_explosion__(Vector(pos.x, pos.y - y))
+        for y in range(1, size):
+            if pos.y + y < len(self.map[0]):
+                if self.map[pos.x][pos.y + y] != cnf.SYMBOLS.empty:
+                    break
+                self.__one_explosion__(Vector(pos.x, pos.y + y))
     
     def is_visible(self, v1: Vector, v2: Vector):
         map = self.map
@@ -137,40 +189,35 @@ class GameView(arcade.Window):
         return True
 
     def __create_map__(self):
-        width = cnf.GRID_SIZE.x
-        height = cnf.GRID_SIZE.y
+        width = cnf.GRID_SIZE[0]
+        height = cnf.GRID_SIZE[1]
         self.map = [[symb.empty] * height for i in range(width)]
 
         for x in range(width):
             for y in range(height):
                 if ((x == width-1 or x == 0 or y == 0 or y == height-1) or 
                     (x % 2 == 0 and y % 2 == 0)):
-                    self.spawn(self.wall, to_global_vector(Vector(x, y)))
+                    self.spawn(self.wall, Vector(x, y), None)
         
-        self.logger.Message(f"====Map is created====")
+        self.logger.Message(f"======= Map is created =======")
 
     def __new_player__(self, texture_path = cnf.TEXTURES.PLAYER_1,
                     name = "player", 
                     position = zero_vector(), 
-                    rotation = 0, 
-                    size = 1, 
                     speed = 4, 
                     keymap = KeyMap(), 
-                    spawn_object = None):
+                    bomb_specifications = None):
         if keymap.is_valid:
-            bc = cnf.BOMB_CONFIG
             player = Player(
                     sprite=arcade.Sprite(arcade.load_texture(texture_path), cnf.SIZE),
                     name=name,
-                    size=size,
-                    rotation=rotation,
                     position=position,
-                    speed=speed*cnf.SIZE,
-                    bomb_specifications=BombSpecifications(bc.count, bc.lifetime, bc.explosion_size)
+                    speed=speed,
+                    bomb_specifications=bomb_specifications
                 )
             controller = PlayerController(
                 keymap=keymap,
-                spawner=Spawner(external_spawn=self.spawn, abstract_object=spawn_object) if spawn_object is not None else None,
+                spawn_bomb_method=self.spawn,
                 player=player
             )
             self.sprite_list.append(player.sprite)
@@ -187,6 +234,17 @@ class GameView(arcade.Window):
             c.on_key_release(key)
     
     def on_update(self, delta_time = 1/30):
+        for e in self.explosion_list:
+            e.lifetime -= 1
+            if e.lifetime == 0:
+                self.explosion_list.remove(e)
+                self.sprite_list.remove(e.sprite)
+
+        for b in self.bombs:
+            if isinstance(b, Bomb):
+                b.lifetime -= 1
+                if b.lifetime == 0:
+                    self.explose(b)
         for c in self.controllers:
             c.on_update()
             '''if isinstance(c, PlayerController):

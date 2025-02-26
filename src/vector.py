@@ -18,9 +18,9 @@ class Vector:
             self.x /= l
             self.y /= l
 
-def to_map_vector(gloabal_vector: Vector):
+def to_map_vector(global_vector: Vector):
     size = cnf.SPRITE_SIZE
-    return Vector(round(gloabal_vector.x / size), round(gloabal_vector.y / size))
+    return Vector(round(global_vector.x / size), round(global_vector.y / size))
 
 def to_global_vector(map_vector: Vector):
     size = cnf.SPRITE_SIZE

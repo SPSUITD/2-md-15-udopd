@@ -1,9 +1,13 @@
 from src.gameobject import GameObject
-from src.vector import zero_vector
+from src.bombspecifications import BombSpecifications
+from src.player import Player
 
-class Bomb(GameObject):    
-    def __init__(self, sprite, name = "bomb", position = zero_vector(), rotation = 0.0, size = 1, lifetime = 300, explosion_size = 3, lst: list = None):
-        super().__init__(sprite, name, position, rotation, size)
-        self.lifetime = lifetime
-        self.explosion_size = explosion_size
-        self.parent_list = lst
+class Bomb(GameObject):
+    parent: Player
+    lifetime: int
+    explosion_size: int
+
+    def __init__(self, go: GameObject, spec: BombSpecifications):
+        super().__init__(go.sprite, go.name, go.position)
+        self.lifetime = spec.lifetime
+        self.explosion_size = spec.size

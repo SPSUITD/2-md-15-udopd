@@ -1,22 +1,20 @@
-from arcade import key as Key
+import src.vector as V
+from src.logger import Logger
+from src.player import Player
 from src.keymap import KeyMap
-from src.player import Player, GameObject, BombSpecifications
-from src.spawner import Spawner, AbstractObject
-from src.vector import Vector, zero_vector
-from src.controllable import Controllable
 
-class PlayerController(Controllable):
-    spawner: Spawner
+class PlayerController():
     keymap: KeyMap
-    direction: Vector
+    direction: V.Vector
+    player: Player
 
-    def __init__(self, keymap: KeyMap, player: Player, spawner = None):
-        self.direction = zero_vector()
-        self.gameObject = player
+    def __init__(self, keymap, player, spawn_bomb_method):
+        self.direction = V.zero_vector()
+        self.spawn_bomb_method = spawn_bomb_method
+        self.player = player
         self.keymap = keymap
-        self.spawner = spawner
 
-    def on_key_press(self, key: Key):
+    def on_key_press(self, key):
         match key:
             case self.keymap.up.key:
                 self.keymap.up.is_pressed = True
@@ -31,11 +29,10 @@ class PlayerController(Controllable):
                 self.keymap.right.is_pressed = True
                 self.direction.x = 1
             case self.keymap.spawn:
-                if self.spawner is not None:
-                    self.spawner.spawn(self.gameObject)
+                self.spawn()
         self.direction.normalize()
 
-    def on_key_release(self, key: Key):
+    def on_key_release(self, key):
         match key:
             case self.keymap.up.key:
                 self.keymap.up.is_pressed = False
@@ -52,5 +49,11 @@ class PlayerController(Controllable):
         self.direction.normalize()
 
     def on_update(self):
-        if isinstance(self.gameObject, Player):
-            self.gameObject.move(self.direction)
+        self.player.move(self.direction)
+
+    def spawn(self):
+        max_count = self.player.bomb_specifications.count
+        if len(self.player.bomb_list) < max_count:
+            self.spawn_bomb_method(self.player.bomb_specifications, V.to_map_vector(self.player.position), self.player)
+        else:
+            Logger().Warning(f"invalid bomb spawn (max number ({max_count}) of bomb already on map)")
