@@ -1,4 +1,5 @@
 import arcade
+import random
 
 import src.config as cnf
 from src.logger import Logger
@@ -24,6 +25,7 @@ class GameView(arcade.Window):
         self.map = None
         self.sprite_list = arcade.SpriteList()
         self.bombs = []
+        self.blocks = []
         self.explosion_list = []
         self.controllers = []
         self.__camera_setup__()
@@ -97,12 +99,15 @@ class GameView(arcade.Window):
                 self.bombs.append(bomb)
                 new_go = bomb
             
+            if object.name == 'block':
+                self.blocks.append(new_go)
+            
             self.sprite_list.append(new_go.sprite)
             self.map[pos.x][pos.y] = object.symbol
             self.logger.Message(f"{object.name} spawn at [{pos.x}, {pos.y}]")
             
         else:
-            self.logger.Message(f"{object.name} spawn at [{pos.x}, {pos.y}]")
+            self.logger.Warning(f"invalid {object.name} spawn at [{pos.x}, {pos.y}]")
             
     def explose(self, bomb: Bomb):
         bomb.parent.bomb_list.remove(bomb)
@@ -117,21 +122,41 @@ class GameView(arcade.Window):
         #ударная волна
         for b in self.bombs:
             temp_contr_pos = to_map_vector(b.position)
-            is_vis = self.is_visible(bomb_map_position, temp_contr_pos)
             in_radius = distance(bomb_map_position, temp_contr_pos) < bomb.explosion_size
-            if is_vis and in_radius and b != bomb:
-                self.logger.Message(f"bomb at [{bomb_map_position.x}, {bomb_map_position.y}] " + 
-                                    f"explose the bomb at [{temp_contr_pos.x}, {temp_contr_pos.y}]")
-                self.explose(b)
-                    
+            if in_radius:
+                is_vis = self.is_visible(bomb_map_position, temp_contr_pos)
+                if is_vis and b != bomb:
+                    self.logger.Message(f"bomb at [{bomb_map_position.x}, {bomb_map_position.y}] " + 
+                                        f"explose the bomb at [{temp_contr_pos.x}, {temp_contr_pos.y}]")
+                    self.explose(b)
+
+        #обработка попаданий по иным объектам  
         for c in self.controllers:
             temp_contr_pos = to_map_vector(c.player.position)
-            is_vis = self.is_visible(bomb_map_position, temp_contr_pos)
             in_radius = distance(bomb_map_position, temp_contr_pos) < bomb.explosion_size
-            if (is_vis and in_radius):
-                self.controllers.remove(c) #заглушка
-                self.logger.Message(f"bomb at [{bomb_map_position.x}, {bomb_map_position.y}] " + 
-                                    f"kill the {c.player.name} at [{temp_contr_pos.x}, {temp_contr_pos.y}]")
+            if in_radius:
+                is_vis = self.is_visible(bomb_map_position, temp_contr_pos)
+                if is_vis:
+                    self.controllers.remove(c) #заглушка
+                    self.logger.Message(f"bomb at [{bomb_map_position.x}, {bomb_map_position.y}] " + 
+                                        f"kill the {c.player.name} at [{temp_contr_pos.x}, {temp_contr_pos.y}]")
+   
+        block_pos = []
+        for bl in self.blocks:
+            temp_contr_pos = to_map_vector(bl.position)
+            in_radius = distance(bomb_map_position, temp_contr_pos) < bomb.explosion_size
+            if in_radius:
+                is_vis = self.is_visible(bomb_map_position, temp_contr_pos)
+                if is_vis:
+                    block_pos.append(bl)
+                    self.logger.Message(f"bomb at [{bomb_map_position.x}, {bomb_map_position.y}] " + 
+                                        f"remove the block at [{temp_contr_pos.x}, {temp_contr_pos.y}]")
+                
+        for bl in block_pos:
+            temp = to_map_vector(bl.position)
+            self.map[temp.x][temp.y] = cnf.SYMBOLS.empty
+            self.blocks.remove(bl)
+            self.sprite_list.remove(bl.sprite)
 
     def __one_explosion__(self, pos: Vector):
         new_go = GameObject(sprite=arcade.Sprite(self.explosion.sprite_path, cnf.SIZE),
@@ -144,25 +169,33 @@ class GameView(arcade.Window):
     def __spawn_explosion__(self, pos: Vector, size: int):
         for x in range(0, size):
             if pos.x - x >= 0:
-                if self.map[pos.x - x][pos.y] != cnf.SYMBOLS.empty:
+                if self.map[pos.x - x][pos.y] == cnf.SYMBOLS.wall:
                     break
                 self.__one_explosion__(Vector(pos.x - x, pos.y))
+                if self.map[pos.x - x][pos.y] == cnf.SYMBOLS.block:
+                    break
         for x in range(1, size):
             if pos.x + x < len(self.map):
-                if self.map[pos.x + x][pos.y] != cnf.SYMBOLS.empty:
+                if self.map[pos.x + x][pos.y] == cnf.SYMBOLS.wall:
                     break
                 self.__one_explosion__(Vector(pos.x + x, pos.y))
+                if self.map[pos.x + x][pos.y] == cnf.SYMBOLS.block:
+                    break
 
         for y in range(0, size):
             if pos.y - y >= 0:
-                if self.map[pos.x][pos.y - y] != cnf.SYMBOLS.empty:
+                if self.map[pos.x][pos.y - y] == cnf.SYMBOLS.wall:
                     break
                 self.__one_explosion__(Vector(pos.x, pos.y - y))
+                if self.map[pos.x][pos.y - y] == cnf.SYMBOLS.block:
+                    break
         for y in range(1, size):
             if pos.y + y < len(self.map[0]):
-                if self.map[pos.x][pos.y + y] != cnf.SYMBOLS.empty:
+                if self.map[pos.x][pos.y + y] == cnf.SYMBOLS.wall:
                     break
                 self.__one_explosion__(Vector(pos.x, pos.y + y))
+                if self.map[pos.x][pos.y + y] == cnf.SYMBOLS.block:
+                    break
     
     def is_visible(self, v1: Vector, v2: Vector):
         map = self.map
@@ -198,8 +231,16 @@ class GameView(arcade.Window):
                 if ((x == width-1 or x == 0 or y == 0 or y == height-1) or 
                     (x % 2 == 0 and y % 2 == 0)):
                     self.spawn(self.wall, Vector(x, y), None)
+                else:
+                    self.__spawn_box__(Vector(x, y))
         
         self.logger.Message(f"======= Map is created =======")
+
+    def __spawn_box__(self, pos):
+        if pos.x == 1 and pos.y == cnf.GRID_SIZE[1]-2:
+            pass
+        else:
+            self.spawn(self.block, pos, None)
 
     def __new_player__(self, texture_path = cnf.TEXTURES.PLAYER_1,
                     name = "player", 

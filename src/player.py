@@ -1,4 +1,5 @@
 from src.gameobject import GameObject
+from src.vector import Vector
 from src.bombspecifications import BombSpecifications
 
 class Player(GameObject):
@@ -12,6 +13,6 @@ class Player(GameObject):
         self.speed = speed
         self.bomb_specifications = bomb_specifications
 
-    def move(self, v):
+    def move(self, v: Vector):
         self.sprite.center_x += v.x * self.speed
         self.sprite.center_y += v.y * self.speed
