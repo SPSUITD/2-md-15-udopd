@@ -84,13 +84,13 @@ class PlayerController():
             if self.direction.x != 0:
                 dirx = int(self.direction.x)
                 symb = self.map[map_next_pos.x + dirx][map_next_pos.y]
-                if symb != cnf.SYMBOLS.empty and symb != cnf.SYMBOLS.bomb:
+                if symb != cnf.SYMBOLS.empty:
                     if distance(to_global_vector(Vector(map_next_pos.x + dirx, map_next_pos.y)), next_pos) < cnf.SPRITE_SIZE*0.9:
                         self.direction.x = 0
                         
             if self.direction.y != 0:
                 diry = int(self.direction.y)
                 symb = self.map[map_next_pos.x][map_next_pos.y+diry]
-                if symb != cnf.SYMBOLS.empty and symb != cnf.SYMBOLS.bomb:
+                if symb != cnf.SYMBOLS.empty:
                     if distance(to_global_vector(Vector(map_next_pos.x, map_next_pos.y+diry)), next_pos) < cnf.SPRITE_SIZE*0.9:
                         self.direction.y = 0

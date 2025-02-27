@@ -112,12 +112,9 @@ class GameView(arcade.Window):
             
     def explose(self, bomb: Bomb):
         bomb.parent.bomb_list.remove(bomb)
-
         self.bombs.remove(bomb)
         bomb_map_position = to_map_vector(bomb.position)
         self.logger.Message(f"bomb explose at [{bomb_map_position.x}, {bomb_map_position.y}]")
-        self.map[bomb_map_position.x][bomb_map_position.y] = symb.empty
-        self.sprite_list.remove(bomb.sprite)
         self.__spawn_explosion__(bomb_map_position, bomb.explosion_size)
         
         #ударная волна
@@ -158,6 +155,9 @@ class GameView(arcade.Window):
             self.map[temp.x][temp.y] = cnf.SYMBOLS.empty
             self.blocks.remove(bl)
             self.sprite_list.remove(bl.sprite)
+
+        self.map[bomb_map_position.x][bomb_map_position.y] = symb.empty
+        self.sprite_list.remove(bomb.sprite)
 
     def __one_explosion__(self, pos: Vector):
         new_go = GameObject(sprite=arcade.Sprite(self.explosion.sprite_path, cnf.SIZE),
