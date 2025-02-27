@@ -16,3 +16,5 @@ class Player(GameObject):
     def move(self, v: Vector):
         self.sprite.center_x += v.x * self.speed
         self.sprite.center_y += v.y * self.speed
+        self.position.x += v.x * self.speed
+        self.position.y += v.y * self.speed

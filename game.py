@@ -26,6 +26,7 @@ class GameView(arcade.Window):
         self.sprite_list = arcade.SpriteList()
         self.bombs = []
         self.blocks = []
+        self.player_sprite = None
         self.explosion_list = []
         self.controllers = []
         self.__camera_setup__()
@@ -44,7 +45,7 @@ class GameView(arcade.Window):
                     position=to_global_vector(Vector(1, cnf.GRID_SIZE[1]-2)),
                     bomb_specifications = self.bomb)
         
-        self.__new_player__(keymap=KeyMap(
+        """self.__new_player__(keymap=KeyMap(
             left=cnf.PLAYER_2_KEYMAP.left,
             right=cnf.PLAYER_2_KEYMAP.right,
             up=cnf.PLAYER_2_KEYMAP.up,
@@ -54,7 +55,7 @@ class GameView(arcade.Window):
                     name='player2',
                     texture_path=cnf.TEXTURES.PLAYER_2,
                     position=to_global_vector(Vector(cnf.GRID_SIZE[0]-2, 1)),
-                    bomb_specifications = self.bomb)
+                    bomb_specifications = self.bomb)"""
     
     def __setup_abstract_objects__(self):
         self.bomb = BombSpecifications(
@@ -272,8 +273,10 @@ class GameView(arcade.Window):
             controller = PlayerController(
                 keymap=keymap,
                 spawn_bomb_method=self.spawn,
-                player=player
+                player=player,
+                map=self.map
             )
+            self.player_sprite = player.sprite
             self.sprite_list.append(player.sprite)
             self.controllers.append(controller)
         else:
