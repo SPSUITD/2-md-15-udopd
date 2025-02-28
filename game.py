@@ -135,6 +135,7 @@ class GameView(arcade.Window):
         self.__spawn_explosion__(bomb_map_position, bomb.explosion_size)
         
         #ударная волна
+        explose_list = []
         for b in self.bombs:
             temp_contr_pos = to_map_vector(b.position)
             in_radius = distance(bomb_map_position, temp_contr_pos) < bomb.explosion_size
@@ -143,7 +144,7 @@ class GameView(arcade.Window):
                 if is_vis and b != bomb:
                     self.logger.Message(f"bomb at [{bomb_map_position.x}, {bomb_map_position.y}] " + 
                                         f"explose the bomb at [{temp_contr_pos.x}, {temp_contr_pos.y}]")
-                    self.explose(b)
+                    explose_list.append(b)
 
         #обработка попаданий по иным объектам  
         for c in self.controllers:
@@ -177,6 +178,9 @@ class GameView(arcade.Window):
                     block_pos.append(bl)
                     self.logger.Message(f"bomb at [{bomb_map_position.x}, {bomb_map_position.y}] " + 
                                         f"remove the block at [{temp_contr_pos.x}, {temp_contr_pos.y}]")
+                    
+        for b in explose_list:
+            self.explose(b)
         for bl in block_pos:
             temp = to_map_vector(bl.position)
             self.map[temp.x][temp.y] = cnf.SYMBOLS.empty

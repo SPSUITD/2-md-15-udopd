@@ -1,6 +1,6 @@
 SIZE = 0.5
 SPRITE_SIZE = 64*2*SIZE
-GRID_SIZE = (17, 13)
+GRID_SIZE = (13, 9) #(17, 13)
 WINDOW_SIZE = (GRID_SIZE[0]*SPRITE_SIZE, GRID_SIZE[1]*SPRITE_SIZE)
 WINDOW_TITLE = "B0mberm@n"
 
@@ -41,6 +41,6 @@ class PLAYER_2_KEYMAP:
     spawn='BACKSPACE'
 
 class BOMB_CONFIG:
-    count = 1 #max count of active bombs
+    count = 5 #max count of active bombs
     lifetime = 150 #ticks
-    size = 2 #cells
+    size = 5 #cells
