@@ -6,3 +6,6 @@ class BombSpecifications(AbstractObject):
         self.count = count
         self.lifetime = lifetime
         self.size = size
+
+def clone(self: BombSpecifications):
+    return BombSpecifications(self.count, self.lifetime, self.size, self.sprite_path, self.symbol)

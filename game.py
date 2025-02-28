@@ -8,7 +8,7 @@ from src.config import SYMBOLS as symb
 from src.playercontroller import PlayerController
 from src.player import Player
 from src.abstractobject import AbstractObject
-from src.bombspecifications import BombSpecifications
+from src.bombspecifications import BombSpecifications, clone
 from src.gameobject import GameObject
 from src.bomb import Bomb
 from src.vector import Vector, to_map_vector, to_global_vector, zero_vector, distance
@@ -309,14 +309,14 @@ class GameView(arcade.Window):
                     position = zero_vector(), 
                     speed = cnf.PLAYER_SPEED, 
                     keymap = KeyMap(), 
-                    bomb_specifications = None):
+                    bomb_specifications = BombSpecifications):
         if keymap.is_valid:
             player = Player(
                     sprite=arcade.Sprite(arcade.load_texture(texture_path), cnf.SIZE),
                     name=name,
                     position=position,
                     speed=speed,
-                    bomb_specifications=bomb_specifications
+                    bomb_specifications=clone(bomb_specifications)
                 )
             controller = PlayerController(
                 keymap=keymap,
