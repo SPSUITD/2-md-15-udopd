@@ -26,6 +26,7 @@ class GameView(arcade.Window):
         self.sprite_list = arcade.SpriteList()
         self.bombs = []
         self.blocks = []
+        self.buffs = []
         self.player_sprite = None
         self.explosion_list = []
         self.controllers = []
@@ -82,6 +83,18 @@ class GameView(arcade.Window):
             name='explosion',
             symbol=cnf.SYMBOLS.empty
             )
+        
+        self.add_bomb = AbstractObject(
+            sprite_path=cnf.TEXTURES.ADD_BOMB,
+            symbol=cnf.SYMBOLS.add_bomb,
+            name='add_bomb'
+            )
+        
+        self.add_explosion_size = AbstractObject(
+            sprite_path=cnf.TEXTURES.ADD_EXPLOSION_SIZE,
+            symbol=cnf.SYMBOLS.add_explosion_size,
+            name='add_explosion_size'
+            )
 
     def __camera_setup__(self):
         self.camera = arcade.camera.Camera2D()
@@ -102,6 +115,10 @@ class GameView(arcade.Window):
             
             if object.name == 'block':
                 self.blocks.append(new_go)
+
+            if  object.name == 'add_bomb' or object.name == 'add_explosion_size':
+                new_go.lifetime = cnf.BUFF_LIFETIME
+                self.buffs.append(new_go)
             
             self.sprite_list.append(new_go.sprite)
             self.map[pos.x][pos.y] = object.symbol
@@ -139,6 +156,17 @@ class GameView(arcade.Window):
                     self.logger.Message(f"bomb at [{bomb_map_position.x}, {bomb_map_position.y}] " + 
                                         f"kill the {c.player.name} at [{temp_contr_pos.x}, {temp_contr_pos.y}]")
    
+        buff_pos = []
+        for buff in self.buffs:
+            temp_contr_pos = to_map_vector(buff.position)
+            in_radius = distance(bomb_map_position, temp_contr_pos) < bomb.explosion_size
+            if in_radius:
+                is_vis = self.is_visible(bomb_map_position, temp_contr_pos)
+                if is_vis:
+                    buff_pos.append(buff)
+                    self.logger.Message(f"bomb at [{bomb_map_position.x}, {bomb_map_position.y}] " + 
+                                        f"remove the buff at [{temp_contr_pos.x}, {temp_contr_pos.y}]")
+
         block_pos = []
         for bl in self.blocks:
             temp_contr_pos = to_map_vector(bl.position)
@@ -149,12 +177,17 @@ class GameView(arcade.Window):
                     block_pos.append(bl)
                     self.logger.Message(f"bomb at [{bomb_map_position.x}, {bomb_map_position.y}] " + 
                                         f"remove the block at [{temp_contr_pos.x}, {temp_contr_pos.y}]")
-                
         for bl in block_pos:
             temp = to_map_vector(bl.position)
             self.map[temp.x][temp.y] = cnf.SYMBOLS.empty
             self.blocks.remove(bl)
             self.sprite_list.remove(bl.sprite)
+            self.__buff_spawn__(temp)
+        for buff in buff_pos:
+            temp = to_map_vector(buff.position)
+            self.map[temp.x][temp.y] = cnf.SYMBOLS.empty
+            self.buffs.remove(buff)
+            self.sprite_list.remove(buff.sprite)
 
         self.map[bomb_map_position.x][bomb_map_position.y] = symb.empty
         self.sprite_list.remove(bomb.sprite)
@@ -173,14 +206,18 @@ class GameView(arcade.Window):
                 if self.map[pos.x - x][pos.y] == cnf.SYMBOLS.wall:
                     break
                 self.__one_explosion__(Vector(pos.x - x, pos.y))
-                if self.map[pos.x - x][pos.y] == cnf.SYMBOLS.block:
+                if (self.map[pos.x - x][pos.y] == cnf.SYMBOLS.block or 
+                    self.map[pos.x - x][pos.y] == cnf.SYMBOLS.add_bomb or
+                    self.map[pos.x - x][pos.y] == cnf.SYMBOLS.add_explosion_size):
                     break
         for x in range(1, size):
             if pos.x + x < len(self.map):
                 if self.map[pos.x + x][pos.y] == cnf.SYMBOLS.wall:
                     break
                 self.__one_explosion__(Vector(pos.x + x, pos.y))
-                if self.map[pos.x + x][pos.y] == cnf.SYMBOLS.block:
+                if (self.map[pos.x + x][pos.y] == cnf.SYMBOLS.block or 
+                    self.map[pos.x + x][pos.y] == cnf.SYMBOLS.add_bomb or
+                    self.map[pos.x + x][pos.y] == cnf.SYMBOLS.add_explosion_size):
                     break
 
         for y in range(0, size):
@@ -188,14 +225,18 @@ class GameView(arcade.Window):
                 if self.map[pos.x][pos.y - y] == cnf.SYMBOLS.wall:
                     break
                 self.__one_explosion__(Vector(pos.x, pos.y - y))
-                if self.map[pos.x][pos.y - y] == cnf.SYMBOLS.block:
+                if (self.map[pos.x][pos.y - y] == cnf.SYMBOLS.block or 
+                    self.map[pos.x][pos.y - y] == cnf.SYMBOLS.add_bomb or
+                    self.map[pos.x][pos.y - y] == cnf.SYMBOLS.add_explosion_size):
                     break
         for y in range(1, size):
             if pos.y + y < len(self.map[0]):
                 if self.map[pos.x][pos.y + y] == cnf.SYMBOLS.wall:
                     break
                 self.__one_explosion__(Vector(pos.x, pos.y + y))
-                if self.map[pos.x][pos.y + y] == cnf.SYMBOLS.block:
+                if (self.map[pos.x][pos.y + y] == cnf.SYMBOLS.block or 
+                    self.map[pos.x][pos.y + y] == cnf.SYMBOLS.add_bomb or
+                    self.map[pos.x][pos.y + y] == cnf.SYMBOLS.add_explosion_size):
                     break
     
     def is_visible(self, v1: Vector, v2: Vector):
@@ -237,6 +278,13 @@ class GameView(arcade.Window):
         
         self.logger.Message(f"======= Map is created =======")
 
+    def __buff_spawn__(self, pos: Vector):
+        if (random.randint(0, 100) / 100) < cnf.BUFF_PROBABILITY:
+            if random.randint(0, 10) < 5:
+                self.spawn(self.add_bomb, pos, None)
+            else:
+                self.spawn(self.add_explosion_size, pos, None)
+    
     def __spawn_box__(self, pos):
         safe_zone = (pos.x == 1 and pos.y == cnf.GRID_SIZE[1]-2 or #player1 safezone
             pos.x == 1 and pos.y == cnf.GRID_SIZE[1]-3 or
@@ -259,7 +307,7 @@ class GameView(arcade.Window):
     def __new_player__(self, texture_path = cnf.TEXTURES.PLAYER_1,
                     name = "player", 
                     position = zero_vector(), 
-                    speed = 4, 
+                    speed = cnf.PLAYER_SPEED, 
                     keymap = KeyMap(), 
                     bomb_specifications = None):
         if keymap.is_valid:
@@ -274,7 +322,8 @@ class GameView(arcade.Window):
                 keymap=keymap,
                 spawn_bomb_method=self.spawn,
                 player=player,
-                map=self.map
+                map=self.map,
+                rm_buff=self.remove_buff
             )
             self.player_sprite = player.sprite
             self.sprite_list.append(player.sprite)
@@ -290,6 +339,15 @@ class GameView(arcade.Window):
         for c in self.controllers:
             c.on_key_release(key)
     
+    def remove_buff(self, buff_pos: Vector):
+        for b in self.buffs:
+            buff_map_pos = to_map_vector(b.position)
+            if buff_map_pos.x == buff_pos.x and buff_map_pos.y == buff_pos.y: 
+                self.map[buff_map_pos.x][buff_map_pos.y] = cnf.SYMBOLS.empty
+                self.sprite_list.remove(b.sprite)
+                self.buffs.remove(b)
+                return
+
     def on_update(self, delta_time = 1/30):
         for e in self.explosion_list:
             e.lifetime -= 1
@@ -302,11 +360,14 @@ class GameView(arcade.Window):
                 b.lifetime -= 1
                 if b.lifetime == 0:
                     self.explose(b)
+
+        for b in self.buffs:
+            b.lifetime -= 1
+            if b.lifetime == 0:
+                self.remove_buff(to_map_vector(b.position))
+
         for c in self.controllers:
             c.on_update()
-            '''if isinstance(c, PlayerController):
-                pos = to_map_vector(c.gameObject.position)
-                self.logger.Message(f"Player position [{pos.x}, {pos.y}]")'''
 
     def on_draw(self):
         self.clear()

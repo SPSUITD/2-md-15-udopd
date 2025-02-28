@@ -10,13 +10,14 @@ class PlayerController():
     direction: Vector
     player: Player
     map: None
+    rm_buff: None
 
-    def __init__(self, keymap, player, spawn_bomb_method, map: list[list[str]] = None):
+    def __init__(self, keymap, player, spawn_bomb_method, map: list[list[str]] = None, rm_buff = None):
         self.direction = zero_vector()
         self.spawn_bomb_method = spawn_bomb_method
         self.player = player
         self.keymap = keymap
-
+        self.rm_buff = rm_buff
         self.map = map
 
     def on_key_press(self, key):
@@ -82,7 +83,7 @@ class PlayerController():
             if self.direction.x != 0:
                 next_pos = Vector(player_map_pos.x + self.direction.x, player_map_pos.y)
                 next_cell = self.map[next_pos.x][next_pos.y]
-                if next_cell == cnf.SYMBOLS.empty:
+                if next_cell == cnf.SYMBOLS.empty or next_cell == cnf.SYMBOLS.add_explosion_size or next_cell == cnf.SYMBOLS.add_bomb:
                     next_glob_pos = to_global_vector(next_pos)
                     if abs(to_global_vector(player_map_pos).y - self.player.position.y) > 5:
                         self.direction.y = int(abs(to_global_vector(player_map_pos).y - self.player.position.y) / (to_global_vector(player_map_pos).y - self.player.position.y))
@@ -102,7 +103,7 @@ class PlayerController():
             if self.direction.y != 0:
                 next_pos = Vector(player_map_pos.x, player_map_pos.y + self.direction.y)
                 next_cell = self.map[next_pos.x][next_pos.y]
-                if next_cell == cnf.SYMBOLS.empty:
+                if next_cell == cnf.SYMBOLS.empty or next_cell == cnf.SYMBOLS.add_explosion_size or next_cell == cnf.SYMBOLS.add_bomb:
                     next_glob_pos = to_global_vector(next_pos)
                     if abs(to_global_vector(player_map_pos).x - self.player.position.x) > 5:
                         self.direction.x = int(abs(to_global_vector(player_map_pos).x - self.player.position.x) / (to_global_vector(player_map_pos).x - self.player.position.x))
@@ -117,3 +118,15 @@ class PlayerController():
                 else:
                     self.direction.y = 0
                     self.player.set_position(Vector(self.player.position.x, next_glob_pos.y))
+
+            #подбор баффов
+            cell = self.map[player_map_pos.x][player_map_pos.y]
+            if cell == cnf.SYMBOLS.add_bomb:
+                Logger().Message(f"{self.player.name} upgrade the max bomb count, received in [{player_map_pos.x} {player_map_pos.y}]")
+                self.player.bomb_specifications.count += 1
+                self.rm_buff(player_map_pos)
+            if cell == cnf.SYMBOLS.add_explosion_size:
+                Logger().Message(f"{self.player.name} upgrade the bomb explosion size, received in [{player_map_pos.x} {player_map_pos.y}]")
+                self.player.bomb_specifications.size += 1
+                self.rm_buff(player_map_pos)
+            
