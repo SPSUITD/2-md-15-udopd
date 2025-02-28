@@ -45,7 +45,7 @@ class GameView(arcade.Window):
                     position=to_global_vector(Vector(1, cnf.GRID_SIZE[1]-2)),
                     bomb_specifications = self.bomb)
         
-        """self.__new_player__(keymap=KeyMap(
+        self.__new_player__(keymap=KeyMap(
             left=cnf.PLAYER_2_KEYMAP.left,
             right=cnf.PLAYER_2_KEYMAP.right,
             up=cnf.PLAYER_2_KEYMAP.up,
@@ -53,9 +53,9 @@ class GameView(arcade.Window):
             spawn=cnf.PLAYER_2_KEYMAP.spawn
         ), 
                     name='player2',
-                    texture_path=cnf.TEXTURES.PLAYER_2,
+                    texture_path=cnf.TEXTURES.PLAYER_2, 
                     position=to_global_vector(Vector(cnf.GRID_SIZE[0]-2, 1)),
-                    bomb_specifications = self.bomb)"""
+                    bomb_specifications = self.bomb)
     
     def __setup_abstract_objects__(self):
         self.bomb = BombSpecifications(

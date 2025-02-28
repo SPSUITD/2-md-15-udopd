@@ -15,7 +15,7 @@ class Logger:
 
     def __init__(self):
         global output
-        #output = open("log.txt", "w")
+        output = open("log.txt", "w")
         self.Message("game start. logger init")
 
     def Error(self, msg):

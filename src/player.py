@@ -18,3 +18,9 @@ class Player(GameObject):
         self.sprite.center_y += v.y * self.speed
         self.position.x += v.x * self.speed
         self.position.y += v.y * self.speed
+
+    def set_position(self, v: Vector):
+        self.sprite.center_x = v.x
+        self.sprite.center_y = v.y
+        self.position.x = v.x
+        self.position.y = v.y

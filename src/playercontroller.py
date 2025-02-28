@@ -63,10 +63,7 @@ class PlayerController():
 
     def on_update(self):
         self.key_update()
-
-        new_pos = Vector(self.player.sprite.center_x + self.direction.x * self.player.speed, 
-                         self.player.sprite.center_y + self.direction.y * self.player.speed)
-        self.rewrite_direction(new_pos)
+        self.collision()
         self.direction.normalize()
         self.player.move(self.direction)
 
@@ -75,22 +72,48 @@ class PlayerController():
         if len(self.player.bomb_list) < max_count:
             self.spawn_bomb_method(self.player.bomb_specifications, to_map_vector(self.player.position), self.player)
         else:
-            Logger().Warning(f"invalid bomb spawn (max number ({max_count}) of bomb already on map)")
+            Logger().Warning(f"invalid bomb spawn from {self.player.name} (max number ({max_count}) of bomb already on map)")
 
-    def rewrite_direction(self, next_pos: Vector):
+    def collision(self):
         if self.direction.x != 0 or self.direction.y != 0:
-            map_next_pos = to_map_vector(next_pos)
+            player_map_pos = to_map_vector(self.player.position)
 
+            #горизонтальное движение
             if self.direction.x != 0:
-                dirx = int(self.direction.x)
-                symb = self.map[map_next_pos.x + dirx][map_next_pos.y]
-                if symb != cnf.SYMBOLS.empty:
-                    if distance(to_global_vector(Vector(map_next_pos.x + dirx, map_next_pos.y)), next_pos) < cnf.SPRITE_SIZE*0.9:
-                        self.direction.x = 0
-                        
-            if self.direction.y != 0:
-                diry = int(self.direction.y)
-                symb = self.map[map_next_pos.x][map_next_pos.y+diry]
-                if symb != cnf.SYMBOLS.empty:
-                    if distance(to_global_vector(Vector(map_next_pos.x, map_next_pos.y+diry)), next_pos) < cnf.SPRITE_SIZE*0.9:
+                next_pos = Vector(player_map_pos.x + self.direction.x, player_map_pos.y)
+                next_cell = self.map[next_pos.x][next_pos.y]
+                if next_cell == cnf.SYMBOLS.empty:
+                    next_glob_pos = to_global_vector(next_pos)
+                    if abs(to_global_vector(player_map_pos).y - self.player.position.y) > 5:
+                        self.direction.y = int(abs(to_global_vector(player_map_pos).y - self.player.position.y) / (to_global_vector(player_map_pos).y - self.player.position.y))
+                    else:
                         self.direction.y = 0
+                        self.player.set_position(Vector(self.player.position.x, to_global_vector(player_map_pos).y))
+                else:
+                    next_glob_pos = to_global_vector(player_map_pos)
+
+                if abs(next_glob_pos.x - self.player.position.x) > 5:
+                    self.direction.x = abs(next_glob_pos.x - self.player.position.x) / (next_glob_pos.x - self.player.position.x)
+                else:
+                    self.direction.x = 0
+                    self.player.set_position(Vector(next_glob_pos.x, self.player.position.y))
+            
+            #вертикальное движение
+            if self.direction.y != 0:
+                next_pos = Vector(player_map_pos.x, player_map_pos.y + self.direction.y)
+                next_cell = self.map[next_pos.x][next_pos.y]
+                if next_cell == cnf.SYMBOLS.empty:
+                    next_glob_pos = to_global_vector(next_pos)
+                    if abs(to_global_vector(player_map_pos).x - self.player.position.x) > 5:
+                        self.direction.x = int(abs(to_global_vector(player_map_pos).x - self.player.position.x) / (to_global_vector(player_map_pos).x - self.player.position.x))
+                    else:
+                        self.direction.x = 0
+                        self.player.set_position(Vector(to_global_vector(player_map_pos).x, self.player.position.y))
+                else:
+                    next_glob_pos = to_global_vector(player_map_pos)
+
+                if abs(next_glob_pos.y - self.player.position.y) > 5:
+                    self.direction.y = abs(next_glob_pos.y - self.player.position.y) / (next_glob_pos.y - self.player.position.y)
+                else:
+                    self.direction.y = 0
+                    self.player.set_position(Vector(self.player.position.x, next_glob_pos.y))

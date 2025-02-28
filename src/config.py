@@ -5,7 +5,7 @@ WINDOW_SIZE = (GRID_SIZE[0]*SPRITE_SIZE, GRID_SIZE[1]*SPRITE_SIZE)
 WINDOW_TITLE = "B0mberm@n"
 
 class TEXTURES:
-    PLAYER_1 = ":resources:images/animated_characters/female_adventurer/femaleAdventurer_idle.png"
+    PLAYER_1 = ":resources:images/animated_characters/male_person/malePerson_idle.png"
     PLAYER_2 = ":resources:images/animated_characters/robot/robot_idle.png"
     BOMB = ":resources:images/tiles/bomb.png"
     WALL = ":resources:images/tiles/brickGrey.png"
