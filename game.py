@@ -2,6 +2,7 @@ import arcade
 import random
 
 import src.config as cnf
+from src.explosiongroup import ExplosionGroup
 from src.logger import Logger
 from src.keymap import KeyMap
 from src.config import SYMBOLS as symb
@@ -181,35 +182,43 @@ class GameView(arcade.Window):
                     
         for b in explose_list:
             self.explose(b)
-        for bl in block_pos:
-            temp = to_map_vector(bl.position)
-            self.map[temp.x][temp.y] = cnf.SYMBOLS.empty
-            self.blocks.remove(bl)
-            self.sprite_list.remove(bl.sprite)
-            self.__buff_spawn__(temp)
         for buff in buff_pos:
             temp = to_map_vector(buff.position)
-            self.map[temp.x][temp.y] = cnf.SYMBOLS.empty
-            self.buffs.remove(buff)
-            self.sprite_list.remove(buff.sprite)
+            if buff in buff_pos:
+                self.buffs.remove(buff)
+                self.map[temp.x][temp.y] = cnf.SYMBOLS.empty
+            if buff.sprite in self.sprite_list:
+                self.sprite_list.remove(buff.sprite)
+        for bl in block_pos:
+            temp = to_map_vector(bl.position)
+            #проверка на случай, если несколько бомб с разных сторон взорвут один и тот же блок
+            if bl in self.blocks:
+                self.blocks.remove(bl)
+                self.map[temp.x][temp.y] = cnf.SYMBOLS.empty
+                self.__buff_spawn__(temp)
+            if bl.sprite in self.sprite_list:
+                self.sprite_list.remove(bl.sprite)
+        
 
         self.map[bomb_map_position.x][bomb_map_position.y] = symb.empty
         self.sprite_list.remove(bomb.sprite)
 
-    def __one_explosion__(self, pos: Vector):
+    def __one_explosion__(self, pos: Vector, explosion_group: ExplosionGroup):
         new_go = GameObject(sprite=arcade.Sprite(self.explosion.sprite_path, cnf.SIZE),
                             name=self.explosion.name,
                             position=to_global_vector(pos))
         new_go.lifetime = 20
-        self.sprite_list.append(new_go.sprite)
-        self.explosion_list.append(new_go)
+        #self.sprite_list.append(new_go.sprite)
+        explosion_group.sprite_list.append(new_go.sprite)
+        #self.explosion_list.append(new_go)
 
     def __spawn_explosion__(self, pos: Vector, size: int):
+        explosion_group = ExplosionGroup(20)
         for x in range(0, size):
             if pos.x - x >= 0:
                 if self.map[pos.x - x][pos.y] == cnf.SYMBOLS.wall:
                     break
-                self.__one_explosion__(Vector(pos.x - x, pos.y))
+                self.__one_explosion__(Vector(pos.x - x, pos.y), explosion_group)
                 if (self.map[pos.x - x][pos.y] == cnf.SYMBOLS.block or 
                     self.map[pos.x - x][pos.y] == cnf.SYMBOLS.add_bomb or
                     self.map[pos.x - x][pos.y] == cnf.SYMBOLS.add_explosion_size):
@@ -218,17 +227,16 @@ class GameView(arcade.Window):
             if pos.x + x < len(self.map):
                 if self.map[pos.x + x][pos.y] == cnf.SYMBOLS.wall:
                     break
-                self.__one_explosion__(Vector(pos.x + x, pos.y))
+                self.__one_explosion__(Vector(pos.x + x, pos.y), explosion_group)
                 if (self.map[pos.x + x][pos.y] == cnf.SYMBOLS.block or 
                     self.map[pos.x + x][pos.y] == cnf.SYMBOLS.add_bomb or
                     self.map[pos.x + x][pos.y] == cnf.SYMBOLS.add_explosion_size):
                     break
-
         for y in range(0, size):
             if pos.y - y >= 0:
                 if self.map[pos.x][pos.y - y] == cnf.SYMBOLS.wall:
                     break
-                self.__one_explosion__(Vector(pos.x, pos.y - y))
+                self.__one_explosion__(Vector(pos.x, pos.y - y), explosion_group)
                 if (self.map[pos.x][pos.y - y] == cnf.SYMBOLS.block or 
                     self.map[pos.x][pos.y - y] == cnf.SYMBOLS.add_bomb or
                     self.map[pos.x][pos.y - y] == cnf.SYMBOLS.add_explosion_size):
@@ -237,11 +245,12 @@ class GameView(arcade.Window):
             if pos.y + y < len(self.map[0]):
                 if self.map[pos.x][pos.y + y] == cnf.SYMBOLS.wall:
                     break
-                self.__one_explosion__(Vector(pos.x, pos.y + y))
+                self.__one_explosion__(Vector(pos.x, pos.y + y), explosion_group)
                 if (self.map[pos.x][pos.y + y] == cnf.SYMBOLS.block or 
                     self.map[pos.x][pos.y + y] == cnf.SYMBOLS.add_bomb or
                     self.map[pos.x][pos.y + y] == cnf.SYMBOLS.add_explosion_size):
                     break
+        self.explosion_list.append(explosion_group)
     
     def is_visible(self, v1: Vector, v2: Vector):
         map = self.map
@@ -353,11 +362,11 @@ class GameView(arcade.Window):
                 return
 
     def on_update(self, delta_time = 1/30):
-        for e in self.explosion_list:
-            e.lifetime -= 1
-            if e.lifetime == 0:
-                self.explosion_list.remove(e)
-                self.sprite_list.remove(e.sprite)
+        if self.explosion_list is not None:
+            for g in self.explosion_list:
+                g.lifetime -= 1
+                if g.lifetime == 0:
+                    self.explosion_list.remove(g)
 
         for b in self.bombs:
             if isinstance(b, Bomb):
@@ -377,6 +386,8 @@ class GameView(arcade.Window):
         self.clear()
         self.camera.use()
         self.sprite_list.draw()
+        for g in self.explosion_list:
+            g.sprite_list.draw()
 
 
 def main():
