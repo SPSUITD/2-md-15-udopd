@@ -13,6 +13,7 @@ from src.bombspecifications import BombSpecifications, clone
 from src.gameobject import GameObject
 from src.bomb import Bomb
 from src.vector import Vector, to_map_vector, to_global_vector, zero_vector, distance
+from server import Server
 
 class GameView(arcade.Window):
     def __init__(self):
@@ -20,7 +21,7 @@ class GameView(arcade.Window):
         self.background_color = arcade.csscolor.LIGHT_GREEN
         self.center_window()
 
-    def setup(self):
+    def setup(self, ip=''):
         self.logger = Logger()
 
         self.map = None
@@ -34,6 +35,11 @@ class GameView(arcade.Window):
         self.__camera_setup__()
         self.__setup_abstract_objects__()
         self.__create_map__()
+
+        if ip != '':
+            self.server1 = Server(ip)
+        else:
+            self.server1 = None
         
         self.__new_player__(keymap=KeyMap(
             left=cnf.PLAYER_1_KEYMAP.left,
@@ -48,17 +54,17 @@ class GameView(arcade.Window):
                     bomb_specifications = self.bomb)
         
         self.__new_player__(keymap=KeyMap(
-            left=cnf.PLAYER_2_KEYMAP.left,
-            right=cnf.PLAYER_2_KEYMAP.right,
-            up=cnf.PLAYER_2_KEYMAP.up,
-            down=cnf.PLAYER_2_KEYMAP.down,
-            spawn=cnf.PLAYER_2_KEYMAP.spawn
+            left=cnf.PLAYER_1_KEYMAP.left,
+            right=cnf.PLAYER_1_KEYMAP.right,
+            up=cnf.PLAYER_1_KEYMAP.up,
+            down=cnf.PLAYER_1_KEYMAP.down,
+            spawn=cnf.PLAYER_1_KEYMAP.spawn
         ), 
                     name='player2',
                     texture_path=cnf.TEXTURES.PLAYER_2, 
                     position=to_global_vector(Vector(cnf.GRID_SIZE[0]-2, 1)),
                     bomb_specifications = self.bomb,
-                    online=True)
+                    source=self.server1)
     
     def __setup_abstract_objects__(self):
         self.bomb = BombSpecifications(
@@ -310,7 +316,19 @@ class GameView(arcade.Window):
             pos.x == cnf.GRID_SIZE[0]-3 and pos.y == 1 or
             pos.x == cnf.GRID_SIZE[0]-4 and pos.y == 1 or
             pos.x == cnf.GRID_SIZE[0]-2 and pos.y == 2 or
-            pos.x == cnf.GRID_SIZE[0]-2 and pos.y == 3)
+            pos.x == cnf.GRID_SIZE[0]-2 and pos.y == 3 or
+            
+            pos.x == 1 and pos.y == 1 or #player3 safezone
+            pos.x == 1 and pos.y == 2 or
+            pos.x == 1 and pos.y == 3 or
+            pos.x == 2 and pos.y == 1 or
+            pos.x == 3 and pos.y == 1 or
+            
+            pos.x == cnf.GRID_SIZE[0]-2 and pos.y == cnf.GRID_SIZE[1]-2 or #player4 safezone
+            pos.x == cnf.GRID_SIZE[0]-3 and pos.y == cnf.GRID_SIZE[1]-2 or
+            pos.x == cnf.GRID_SIZE[0]-4 and pos.y == cnf.GRID_SIZE[1]-2 or
+            pos.x == cnf.GRID_SIZE[0]-2 and pos.y == cnf.GRID_SIZE[1]-3 or
+            pos.x == cnf.GRID_SIZE[0]-2 and pos.y == cnf.GRID_SIZE[1]-4)
 
         if safe_zone:
             pass
@@ -324,7 +342,7 @@ class GameView(arcade.Window):
                     speed = cnf.PLAYER_SPEED, 
                     keymap = KeyMap(), 
                     bomb_specifications = BombSpecifications,
-                    online=False):
+                    source: Server = None):
         if keymap.is_valid:
             player = Player(
                     sprite=arcade.Sprite(arcade.load_texture(texture_path), cnf.SIZE),
@@ -339,7 +357,7 @@ class GameView(arcade.Window):
                 player=player,
                 map=self.map,
                 rm_buff=self.remove_buff,
-                online=online
+                source=source
             )
             self.player_sprite = player.sprite
             self.sprite_list.append(player.sprite)
@@ -349,12 +367,12 @@ class GameView(arcade.Window):
 
     def on_key_press(self, key, modifiers):
         for c in self.controllers:
-            if not c.online:
+            if c.source is None:
                 c.on_key_press(key)
 
     def on_key_release(self, key, modifiers):
         for c in self.controllers:
-            if not c.online:
+            if c.source is None:
                 c.on_key_release(key)
     
     def remove_buff(self, buff_pos: Vector):
@@ -386,6 +404,8 @@ class GameView(arcade.Window):
 
         for c in self.controllers:
             c.on_update()
+            if c.source is not None:
+                c.server_update()
 
     def on_draw(self):
         self.clear()
@@ -397,7 +417,7 @@ class GameView(arcade.Window):
 
 def main():
     window = GameView()
-    window.setup()
+    window.setup('127.0.0.1:5555')
 
     arcade.run()
 

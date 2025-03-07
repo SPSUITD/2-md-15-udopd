@@ -1,4 +1,3 @@
-import threading
 import src.config as cnf
 
 from src.vector import Vector, zero_vector, to_global_vector, to_map_vector
@@ -14,20 +13,16 @@ class PlayerController:
     map: None
     rm_buff: None
 
-    def __init__(self, keymap, player = None, spawn_bomb_method = None, map: list[list[str]] = None, rm_buff = None, online: bool = False):
+    def __init__(self, keymap, player = None, spawn_bomb_method = None, map: list[list[str]] = None, rm_buff = None, source: Server = None):
         self.direction = zero_vector()
         self.spawn_bomb_method = spawn_bomb_method
         self.player = player
         self.keymap = keymap
         self.rm_buff = rm_buff
         self.map = map
-        self.online = online    
-        if online:
-            self.server_setup()        
-
-    def server_setup(self):
-        self.s = Server('127.0.0.1:5555')
-        threading.Thread(target=self.s.run, daemon=True).start()
+        self.source = source    
+        if source is not None:
+            self.player_disconnection()
             
     def on_key_press(self, key):
         match key:
@@ -73,10 +68,6 @@ class PlayerController:
             self.direction.x = -1 if self.keymap.left.is_pressed else 0
 
     def on_update(self):
-        if self.online:
-            data = self.s.get_client_input()
-            self.parse_keymap(data)
-            #Logger().Message(f'direction: {self.direction.x} {self.direction.y}')
         self.key_update()
         if self.map is not None:
             self.collision()
@@ -84,19 +75,32 @@ class PlayerController:
         if self.player is not None:
             self.player.move(self.direction)
 
-    def parse_keymap(self, data):
-        if data is not None:
-            if data['action'] == 'press':
-                self.on_key_press(data['key'])
-            else:
-                self.on_key_release(data['key'])
-
     def spawn(self):
         max_count = self.player.bomb_specifications.count
         if self.spawn_bomb_method is not None and len(self.player.bomb_list) < max_count:
             self.spawn_bomb_method(self.player.bomb_specifications, to_map_vector(self.player.position), self.player)
         else:
             Logger().Warning(f"invalid bomb spawn from {self.player.name} (max number ({max_count}) of bomb already on map)")
+
+    def player_disconnection(self):
+        self.player_size = self.player.sprite.size
+        self.player.sprite.size = (0, 0)
+
+    def player_connect(self):
+        self.player.sprite.size = self.player_size
+
+    def server_update(self):
+        self.parse_data(self.source.get_data())
+
+    def parse_data(self, data):
+        if data is not None:
+            match data['action']:
+                case 'press':
+                    self.on_key_press(data['key'])
+                case 'release':
+                    self.on_key_release(data['key'])
+                case 'connect':
+                    self.player_connect()
 
     def collision(self):
         if self.direction.x != 0 or self.direction.y != 0:

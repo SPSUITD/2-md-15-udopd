@@ -27,11 +27,19 @@ class ClientView(arcade.Window):
         
     def on_key_press(self, key, modifiers):
         self.controller.on_key_press(key)
-        self.c.on_key_press(key)
+        data = {
+            'action': 'press',
+            'key': key
+        }
+        self.c.push(data)
 
     def on_key_release(self, key, modifiers):
         self.controller.on_key_release(key)
-        self.c.on_key_release(key)
+        data = {
+            'action': 'release',
+            'key': key
+        }
+        self.c.push(data)
     
     def on_update(self, deltatime):
         self.controller.on_update()
