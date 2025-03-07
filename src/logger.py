@@ -15,7 +15,7 @@ class Logger:
 
     def __init__(self):
         global output
-        #output = open("log.txt", "w")
+        output = open("log.txt", "w")
 
     def Error(self, msg):
         global output

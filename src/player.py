@@ -7,7 +7,7 @@ class Player(GameObject):
     bomb_list: list
     bomb_specifications: BombSpecifications
 
-    def __init__(self, sprite, name = "player", position = None, speed = 0, bomb_specifications: BombSpecifications = None):
+    def __init__(self, sprite, name = "player", position = Vector(0, 0), speed = 0, bomb_specifications: BombSpecifications = None):
         super().__init__(sprite, name, position)
         self.bomb_list = []
         self.speed = speed

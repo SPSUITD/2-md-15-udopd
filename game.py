@@ -16,7 +16,7 @@ from src.vector import Vector, to_map_vector, to_global_vector, zero_vector, dis
 
 class GameView(arcade.Window):
     def __init__(self):
-        super().__init__(cnf.WINDOW_SIZE[0], cnf.WINDOW_SIZE[1], cnf.WINDOW_TITLE)
+        super().__init__(cnf.WINDOW_SIZE[0]+cnf.GUI_SIZE[0]*cnf.SPRITE_SIZE, cnf.WINDOW_SIZE[1]+cnf.GUI_SIZE[1]*cnf.SPRITE_SIZE, cnf.WINDOW_TITLE)
         self.background_color = arcade.csscolor.LIGHT_GREEN
         self.center_window()
 
@@ -57,7 +57,8 @@ class GameView(arcade.Window):
                     name='player2',
                     texture_path=cnf.TEXTURES.PLAYER_2, 
                     position=to_global_vector(Vector(cnf.GRID_SIZE[0]-2, 1)),
-                    bomb_specifications = self.bomb)
+                    bomb_specifications = self.bomb,
+                    online=True)
     
     def __setup_abstract_objects__(self):
         self.bomb = BombSpecifications(
@@ -99,7 +100,7 @@ class GameView(arcade.Window):
 
     def __camera_setup__(self):
         self.camera = arcade.camera.Camera2D()
-        self.camera.position = ((cnf.GRID_SIZE[0]-1)*cnf.SPRITE_SIZE/2, (cnf.GRID_SIZE[1]-1)*cnf.SPRITE_SIZE/2)
+        self.camera.position = ((cnf.WINDOW_SIZE[0]-cnf.SPRITE_SIZE)/2, (cnf.WINDOW_SIZE[1]+(cnf.GUI_SIZE[1]-1)*cnf.SPRITE_SIZE)/2)
 
     def spawn(self, object: AbstractObject, pos: Vector, player: Player):
         if self.map[pos.x][pos.y] == symb.empty:
@@ -322,7 +323,8 @@ class GameView(arcade.Window):
                     position = zero_vector(), 
                     speed = cnf.PLAYER_SPEED, 
                     keymap = KeyMap(), 
-                    bomb_specifications = BombSpecifications):
+                    bomb_specifications = BombSpecifications,
+                    online=False):
         if keymap.is_valid:
             player = Player(
                     sprite=arcade.Sprite(arcade.load_texture(texture_path), cnf.SIZE),
@@ -336,7 +338,8 @@ class GameView(arcade.Window):
                 spawn_bomb_method=self.spawn,
                 player=player,
                 map=self.map,
-                rm_buff=self.remove_buff
+                rm_buff=self.remove_buff,
+                online=online
             )
             self.player_sprite = player.sprite
             self.sprite_list.append(player.sprite)
@@ -346,11 +349,13 @@ class GameView(arcade.Window):
 
     def on_key_press(self, key, modifiers):
         for c in self.controllers:
-            c.on_key_press(key)
+            if not c.online:
+                c.on_key_press(key)
 
     def on_key_release(self, key, modifiers):
         for c in self.controllers:
-            c.on_key_release(key)
+            if not c.online:
+                c.on_key_release(key)
     
     def remove_buff(self, buff_pos: Vector):
         for b in self.buffs:
@@ -393,6 +398,7 @@ class GameView(arcade.Window):
 def main():
     window = GameView()
     window.setup()
+
     arcade.run()
 
 if __name__ == "__main__":
