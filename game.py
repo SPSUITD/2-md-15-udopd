@@ -14,6 +14,7 @@ from src.gameobject import GameObject
 from src.bomb import Bomb
 from src.vector import Vector, to_map_vector, to_global_vector, zero_vector, distance
 from server import Server
+from client import Client
 
 class GameView(arcade.Window):
     def __init__(self):
@@ -21,7 +22,7 @@ class GameView(arcade.Window):
         self.background_color = arcade.csscolor.LIGHT_GREEN
         self.center_window()
 
-    def setup(self, ip=''):
+    def setup(self, ip = []):
         self.logger = Logger()
 
         self.map = None
@@ -32,14 +33,13 @@ class GameView(arcade.Window):
         self.player_sprite = None
         self.explosion_list = []
         self.controllers = []
+        
+        self.clients = []
+        self.servers = []
         self.__camera_setup__()
         self.__setup_abstract_objects__()
         self.__create_map__()
-
-        if ip != '':
-            self.server1 = Server(ip)
-        else:
-            self.server1 = None
+        self.host_setup(ip)
         
         self.__new_player__(keymap=KeyMap(
             left=cnf.PLAYER_1_KEYMAP.left,
@@ -50,22 +50,28 @@ class GameView(arcade.Window):
         ), 
                     name='player1',
                     texture_path=cnf.TEXTURES.PLAYER_1, 
-                    position=to_global_vector(Vector(1, cnf.GRID_SIZE[1]-2)),
+                    position=to_global_vector(Vector(cnf.PLAYER_POS[0][0], cnf.PLAYER_POS[0][1])),
                     bomb_specifications = self.bomb)
         
-        self.__new_player__(keymap=KeyMap(
-            left=cnf.PLAYER_1_KEYMAP.left,
-            right=cnf.PLAYER_1_KEYMAP.right,
-            up=cnf.PLAYER_1_KEYMAP.up,
-            down=cnf.PLAYER_1_KEYMAP.down,
-            spawn=cnf.PLAYER_1_KEYMAP.spawn
-        ), 
-                    name='player2',
-                    texture_path=cnf.TEXTURES.PLAYER_2, 
-                    position=to_global_vector(Vector(cnf.GRID_SIZE[0]-2, 1)),
-                    bomb_specifications = self.bomb,
-                    source=self.server1)
-    
+        for i in range(len(self.servers)):
+            self.__new_player__(keymap=KeyMap(
+                left=cnf.PLAYER_1_KEYMAP.left,
+                right=cnf.PLAYER_1_KEYMAP.right,
+                up=cnf.PLAYER_1_KEYMAP.up,
+                down=cnf.PLAYER_1_KEYMAP.down,
+                spawn=cnf.PLAYER_1_KEYMAP.spawn
+            ), 
+                        name='player'+str(i+2),
+                        texture_path=cnf.TEXTURES.PLAYER_2, 
+                        position=to_global_vector(Vector(cnf.PLAYER_POS[i+1][0], cnf.PLAYER_POS[i+1][1])),
+                        bomb_specifications = self.bomb,
+                        source=self.servers[i])
+        
+    def host_setup(self, ip):
+        for i in range(len(ip)):
+            self.servers.append(Server(ip[i-1], cnf.SERVER_DELTATIME))
+            self.clients.append(Client(ip[i-1]+"1"))
+
     def __setup_abstract_objects__(self):
         self.bomb = BombSpecifications(
             cnf.BOMB_CONFIG.count,
@@ -154,14 +160,15 @@ class GameView(arcade.Window):
                                         f"explose the bomb at [{temp_contr_pos.x}, {temp_contr_pos.y}]")
                     explose_list.append(b)
 
-        #обработка попаданий по иным объектам  
+        #обработка попаданий по иным объектам
+        players = []
         for c in self.controllers:
             temp_contr_pos = to_map_vector(c.player.position)
             in_radius = distance(bomb_map_position, temp_contr_pos) < bomb.explosion_size
             if in_radius:
                 is_vis = self.is_visible(bomb_map_position, temp_contr_pos)
                 if is_vis:
-                    self.controllers.remove(c) #заглушка
+                    players.append(c)
                     self.logger.Message(f"bomb at [{bomb_map_position.x}, {bomb_map_position.y}] " + 
                                         f"kill the {c.player.name} at [{temp_contr_pos.x}, {temp_contr_pos.y}]")
    
@@ -186,7 +193,11 @@ class GameView(arcade.Window):
                     block_pos.append(bl)
                     self.logger.Message(f"bomb at [{bomb_map_position.x}, {bomb_map_position.y}] " + 
                                         f"remove the block at [{temp_contr_pos.x}, {temp_contr_pos.y}]")
-                    
+        
+        for p in players:
+            if p.player.sprite in self.sprite_list:
+                self.sprite_list.remove(p.player.sprite)
+            self.controllers.remove(p) #заглушка
         for b in explose_list:
             self.explose(b)
         for buff in buff_pos:
@@ -215,7 +226,6 @@ class GameView(arcade.Window):
                             name=self.explosion.name,
                             position=to_global_vector(pos))
         new_go.lifetime = 20
-        #self.sprite_list.append(new_go.sprite)
         explosion_group.sprite_list.append(new_go.sprite)
         #self.explosion_list.append(new_go)
 
@@ -406,6 +416,22 @@ class GameView(arcade.Window):
             c.on_update()
             if c.source is not None:
                 c.server_update()
+                
+        for c in self.clients:
+            players = [[(i.player.position.x, i.player.position.y), i.player.name] for i in self.controllers]
+
+            explosions = []
+            for i in self.explosion_list:
+                for e in i.sprite_list:
+                    explosions.append((e.center_x, e.center_y))
+
+            #explosions = [[(i.position.x, i.position.y)] for i in self.explosion_list]
+            data = {
+                "map": self.map,
+                "players": players,
+                "eplosions": explosions,
+            }
+            c.push(data)
 
     def on_draw(self):
         self.clear()
@@ -417,7 +443,7 @@ class GameView(arcade.Window):
 
 def main():
     window = GameView()
-    window.setup('127.0.0.1:5555')
+    window.setup(['127.0.0.1:5555', '127.0.0.1:5556', '127.0.0.1:5557'])
 
     arcade.run()
 

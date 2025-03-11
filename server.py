@@ -1,9 +1,11 @@
 import threading
 import zmq
 import json
+import time
 
 class Server:
-    def __init__(self, pull_ip):
+    def __init__(self, pull_ip, delta_time = 0):
+        self.delta_time = delta_time
         self.__data = None
         self.context = zmq.Context()
         self.pull_socket = self.context.socket(zmq.PULL)

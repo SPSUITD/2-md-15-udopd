@@ -1,4 +1,4 @@
-SIZE = 0.5
+SIZE = 0.3
 SPRITE_SIZE = 64*2*SIZE
 GRID_SIZE = (17, 13) #(17, 13)
 WINDOW_SIZE = (GRID_SIZE[0]*SPRITE_SIZE, (GRID_SIZE[1])*SPRITE_SIZE)
@@ -8,6 +8,13 @@ WINDOW_TITLE = "B0mberm@n"
 PLAYER_SPEED = 4*2*SIZE
 BUFF_LIFETIME = 500
 BUFF_PROBABILITY = 0.2
+
+SERVER_DELTATIME = 1 / 30
+
+PLAYER_POS = [(1, GRID_SIZE[1]-2),
+              (GRID_SIZE[0]-2, 1),
+              (1, 1),
+              (GRID_SIZE[0]-2, GRID_SIZE[1]-2)]
 
 class TEXTURES:
     PLAYER_1 = ":resources:images/animated_characters/male_person/malePerson_idle.png"

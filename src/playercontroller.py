@@ -95,10 +95,13 @@ class PlayerController:
     def parse_data(self, data):
         if data is not None:
             match data['action']:
-                case 'press':
-                    self.on_key_press(data['key'])
-                case 'release':
-                    self.on_key_release(data['key'])
+                case 'direction':
+                    self.keymap.up.is_pressed = data['up']
+                    self.keymap.down.is_pressed = data['down']
+                    self.keymap.left.is_pressed = data['left']
+                    self.keymap.right.is_pressed = data['right']
+                case 'spawn':
+                    self.spawn()
                 case 'connect':
                     self.player_connect()
 
