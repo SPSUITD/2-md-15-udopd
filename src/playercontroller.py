@@ -13,13 +13,14 @@ class PlayerController:
     map: None
     rm_buff: None
 
-    def __init__(self, keymap, player = None, spawn_bomb_method = None, map: list[list[str]] = None, rm_buff = None, source: Server = None):
+    def __init__(self, keymap, player = None, spawn_bomb_method = None, map: list[list[str]] = None, rm_buff = None, source: Server = None, connect_method = None):
         self.direction = zero_vector()
         self.spawn_bomb_method = spawn_bomb_method
         self.player = player
         self.keymap = keymap
         self.rm_buff = rm_buff
         self.map = map
+        self.connect_method = connect_method
         self.source = source    
         if source is not None:
             self.player_disconnection()
@@ -103,6 +104,7 @@ class PlayerController:
                 case 'spawn':
                     self.spawn()
                 case 'connect':
+                    self.connect_method(data['ip'])
                     self.player_connect()
 
     def collision(self):

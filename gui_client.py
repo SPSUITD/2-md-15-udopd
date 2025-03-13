@@ -11,8 +11,8 @@ from server import Server
 class ClientView(arcade.Window):
     controller: PlayerController
     
-    def __init__(self, ip):
-        super().__init__(cnf.WINDOW_SIZE[0]+cnf.GUI_SIZE[0]*cnf.SPRITE_SIZE, cnf.WINDOW_SIZE[1]+cnf.GUI_SIZE[1]*cnf.SPRITE_SIZE, cnf.WINDOW_TITLE+'_client_'+ip)
+    def __init__(self, host_ip, my_ip):
+        super().__init__(cnf.WINDOW_SIZE[0]+cnf.GUI_SIZE[0]*cnf.SPRITE_SIZE, cnf.WINDOW_SIZE[1]+cnf.GUI_SIZE[1]*cnf.SPRITE_SIZE, cnf.WINDOW_TITLE+'_client')
         self.background_color = arcade.csscolor.LIGHT_GREEN
         self.center_window()
         self.direction = Vector(0, 0)
@@ -32,11 +32,16 @@ class ClientView(arcade.Window):
         self.camera.position = ((cnf.WINDOW_SIZE[0]-cnf.SPRITE_SIZE)/2, (cnf.WINDOW_SIZE[1]+(cnf.GUI_SIZE[1]-1)*cnf.SPRITE_SIZE)/2)
 
         self.draw_walls()
-        self.client_setup(ip)
-        self.server_setup(ip+'1')
+        self.client_setup(host_ip+':5550', my_ip)
+        self.server_setup(host_ip+':5555')
 
-    def client_setup(self, ip):
-        self.client = Client(ip)
+    def client_setup(self, host_ip, my_ip):
+        self.client = Client(host_ip)
+
+        self.client.push({
+            'action': 'connect',
+            'ip': my_ip
+            })
 
     def server_setup(self, ip):
         self.server = Server(ip, cnf.SERVER_DELTATIME)
@@ -137,11 +142,9 @@ class ClientView(arcade.Window):
                                                           cnf.SIZE,
                                                           pos.x,
                                                           pos.y))
-
-
-def main(port):
-    ClientView(ip='127.0.0.1:'+port)
+def start_game(ip):
+    ClientView(ip, ip)
     arcade.run()
 
-if __name__ == "__main__":
-    main(sys.argv[1])
+
+start_game('192.168.3.5')

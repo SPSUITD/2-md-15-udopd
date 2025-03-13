@@ -18,11 +18,11 @@ from client import Client
 
 class GameView(arcade.Window):
     def __init__(self):
-        super().__init__(cnf.WINDOW_SIZE[0]+cnf.GUI_SIZE[0]*cnf.SPRITE_SIZE, cnf.WINDOW_SIZE[1]+cnf.GUI_SIZE[1]*cnf.SPRITE_SIZE, cnf.WINDOW_TITLE)
+        super().__init__(cnf.WINDOW_SIZE[0]+cnf.GUI_SIZE[0]*cnf.SPRITE_SIZE, cnf.WINDOW_SIZE[1]+cnf.GUI_SIZE[1]*cnf.SPRITE_SIZE, cnf.WINDOW_TITLE+"_host")
         self.background_color = arcade.csscolor.LIGHT_GREEN
         self.center_window()
 
-    def setup(self, ip = []):
+    def setup(self, host_ip, count):
         self.logger = Logger()
 
         self.map = None
@@ -39,7 +39,7 @@ class GameView(arcade.Window):
         self.__camera_setup__()
         self.__setup_abstract_objects__()
         self.__create_map__()
-        self.host_setup(ip)
+        self.host_setup(host_ip, count)
         
         self.__new_player__(keymap=KeyMap(
             left=cnf.PLAYER_1_KEYMAP.left,
@@ -65,12 +65,15 @@ class GameView(arcade.Window):
                         texture_path=cnf.TEXTURES.PLAYER_2, 
                         position=to_global_vector(Vector(cnf.PLAYER_POS[i+1][0], cnf.PLAYER_POS[i+1][1])),
                         bomb_specifications = self.bomb,
-                        source=self.servers[i])
+                        source=self.servers[i],
+                        connect_method=self.connect_client)
         
-    def host_setup(self, ip):
-        for i in range(len(ip)):
-            self.servers.append(Server(ip[i-1], cnf.SERVER_DELTATIME))
-            self.clients.append(Client(ip[i-1]+"1"))
+    def host_setup(self, host_ip, count):
+        for i in range(count-1):
+            self.servers.append(Server(host_ip+":555"+str(i), cnf.SERVER_DELTATIME))
+
+    def connect_client(self, ip):
+        self.clients.append(Client(ip+":5555"))
 
     def __setup_abstract_objects__(self):
         self.bomb = BombSpecifications(
@@ -352,7 +355,8 @@ class GameView(arcade.Window):
                     speed = cnf.PLAYER_SPEED, 
                     keymap = KeyMap(), 
                     bomb_specifications = BombSpecifications,
-                    source: Server = None):
+                    source: Server = None,
+                    connect_method = None):
         if keymap.is_valid:
             player = Player(
                     sprite=arcade.Sprite(arcade.load_texture(texture_path), cnf.SIZE),
@@ -367,7 +371,8 @@ class GameView(arcade.Window):
                 player=player,
                 map=self.map,
                 rm_buff=self.remove_buff,
-                source=source
+                source=source,
+                connect_method=connect_method
             )
             self.player_sprite = player.sprite
             self.sprite_list.append(player.sprite)
@@ -441,11 +446,7 @@ class GameView(arcade.Window):
             g.sprite_list.draw()
 
 
-def main():
+def start_game(host_api, count):
     window = GameView()
-    window.setup(['127.0.0.1:5555', '127.0.0.1:5556', '127.0.0.1:5557'])
-
+    window.setup(host_api, count)
     arcade.run()
-
-if __name__ == "__main__":
-    main()
