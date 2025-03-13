@@ -17,12 +17,17 @@ from server import Server
 from client import Client
 
 class GameView(arcade.Window):
-    def __init__(self):
-        super().__init__(cnf.WINDOW_SIZE[0]+cnf.GUI_SIZE[0]*cnf.SPRITE_SIZE, cnf.WINDOW_SIZE[1]+cnf.GUI_SIZE[1]*cnf.SPRITE_SIZE, cnf.WINDOW_TITLE+"_host")
+    def __init__(self, host_ip = ''):
+        name = ''
+        if host_ip != '':
+            name = f"_host ({host_ip})"
+
+        super().__init__(cnf.WINDOW_SIZE[0]+cnf.GUI_SIZE[0]*cnf.SPRITE_SIZE, cnf.WINDOW_SIZE[1]+cnf.GUI_SIZE[1]*cnf.SPRITE_SIZE, cnf.WINDOW_TITLE+name)
         self.background_color = arcade.csscolor.LIGHT_GREEN
         self.center_window()
+        self.host_ip = host_ip
 
-    def setup(self, host_ip, count):
+    def setup(self, count):
         self.logger = Logger()
 
         self.map = None
@@ -39,7 +44,6 @@ class GameView(arcade.Window):
         self.__camera_setup__()
         self.__setup_abstract_objects__()
         self.__create_map__()
-        self.host_setup(host_ip, count)
         
         self.__new_player__(keymap=KeyMap(
             left=cnf.PLAYER_1_KEYMAP.left,
@@ -53,7 +57,29 @@ class GameView(arcade.Window):
                     position=to_global_vector(Vector(cnf.PLAYER_POS[0][0], cnf.PLAYER_POS[0][1])),
                     bomb_specifications = self.bomb)
         
-        for i in range(len(self.servers)):
+        if count == 0:
+            self.setup_pvp_game()
+        else:
+            self.setup_localgame(count)
+    
+    def setup_pvp_game(self):
+        self.__new_player__(keymap=KeyMap(
+            left=cnf.PLAYER_2_KEYMAP.left,
+            right=cnf.PLAYER_2_KEYMAP.right,
+            up=cnf.PLAYER_2_KEYMAP.up,
+            down=cnf.PLAYER_2_KEYMAP.down,
+            spawn=cnf.PLAYER_2_KEYMAP.spawn
+        ), 
+                    name='player1',
+                    texture_path=cnf.TEXTURES.PLAYER_2, 
+                    position=to_global_vector(Vector(cnf.PLAYER_POS[1][0], cnf.PLAYER_POS[1][1])),
+                    bomb_specifications = self.bomb)
+            
+    def setup_localgame(self, count):
+        for i in range(count-1):
+            self.servers.append(Server(self.host_ip+":555"+str(i), cnf.SERVER_DELTATIME))
+        
+        for i in range(count-1):
             self.__new_player__(keymap=KeyMap(
                 left=cnf.PLAYER_1_KEYMAP.left,
                 right=cnf.PLAYER_1_KEYMAP.right,
@@ -67,12 +93,9 @@ class GameView(arcade.Window):
                         bomb_specifications = self.bomb,
                         source=self.servers[i],
                         connect_method=self.connect_client)
-        
-    def host_setup(self, host_ip, count):
-        for i in range(count-1):
-            self.servers.append(Server(host_ip+":555"+str(i), cnf.SERVER_DELTATIME))
 
     def connect_client(self, ip):
+        self.logger.Message(f'{ip}_client successfully connected')
         self.clients.append(Client(ip+":5555"))
 
     def __setup_abstract_objects__(self):
@@ -446,7 +469,7 @@ class GameView(arcade.Window):
             g.sprite_list.draw()
 
 
-def start_game(host_api, count):
-    window = GameView()
-    window.setup(host_api, count)
+def start_game(host_api='', count=0):
+    window = GameView(host_api)
+    window.setup(count)
     arcade.run()

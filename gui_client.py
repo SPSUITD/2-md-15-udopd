@@ -145,6 +145,3 @@ class ClientView(arcade.Window):
 def start_game(ip):
     ClientView(ip, ip)
     arcade.run()
-
-
-start_game('192.168.3.5')
