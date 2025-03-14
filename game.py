@@ -60,7 +60,7 @@ class GameView(arcade.Window):
         if count == 0:
             self.setup_pvp_game()
         else:
-            self.setup_localgame(count)
+            self.setup_localgame(count-1)
     
     def setup_pvp_game(self):
         self.__new_player__(keymap=KeyMap(
@@ -76,10 +76,10 @@ class GameView(arcade.Window):
                     bomb_specifications = self.bomb)
             
     def setup_localgame(self, count):
-        for i in range(count-1):
+        for i in range(count):
             self.servers.append(Server(self.host_ip+":555"+str(i), cnf.SERVER_DELTATIME))
         
-        for i in range(count-1):
+        for i in range(count):
             self.__new_player__(keymap=KeyMap(
                 left=cnf.PLAYER_1_KEYMAP.left,
                 right=cnf.PLAYER_1_KEYMAP.right,
@@ -95,7 +95,7 @@ class GameView(arcade.Window):
                         connect_method=self.connect_client)
 
     def connect_client(self, ip):
-        self.logger.Message(f'{ip}_client successfully connected')
+        #self.logger.Message(f'{ip}_client successfully connected')
         self.clients.append(Client(ip+":5555"))
 
     def __setup_abstract_objects__(self):
