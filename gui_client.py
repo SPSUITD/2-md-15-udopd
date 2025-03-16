@@ -1,5 +1,5 @@
 import arcade
-import sys
+import time
 
 import src.config as cnf
 from src.keymap import KeyMap
@@ -16,11 +16,10 @@ class ClientView(arcade.Window):
         self.background_color = arcade.csscolor.LIGHT_GREEN
         self.center_window()
         self.direction = Vector(0, 0)
-        self.sprite_list = arcade.SpriteList()
+        self.map_list = arcade.SpriteList()
+        self.players_list = arcade.SpriteList()
+        self.explosions_list = arcade.SpriteList()
         self.wall_list = arcade.SpriteList()
-        self.map = []
-        self.players = []
-        self.eplosions = []
 
         self.controller = PlayerController(keymap=KeyMap(left=cnf.PLAYER_1_KEYMAP.left,
                       right=cnf.PLAYER_1_KEYMAP.right,
@@ -37,14 +36,13 @@ class ClientView(arcade.Window):
 
     def client_setup(self, host_ip, my_ip):
         self.client = Client(host_ip)
-
         self.client.push({
             'action': 'connect',
             'ip': my_ip
             })
 
     def server_setup(self, ip):
-        self.server = Server(ip, cnf.SERVER_DELTATIME)
+        self.server = Server(ip)
         
     def on_key_press(self, key, modifiers):
         self.controller.on_key_press(key)
@@ -63,15 +61,22 @@ class ClientView(arcade.Window):
     def on_update(self, deltatime):
         self.controller.on_update()
         data = self.server.get_data()
-        if data is not None and 'map' in data:
-            self.map = data['map']
-            self.players = data['players']
-            self.eplosions = data['eplosions']
+        if data is not None:
+            if 'map' in data:
+                self.map = data['map']
+                self.draw_map()
+            if 'players' in data:
+                self.draw_players(data['players'])
+            if 'explosions' in data:
+                self.draw_explosions(data['explosions'])
+            else:
+                self.explosions_list.clear()
         
     def on_draw(self):
         self.clear()
-        self.draw_map()
-        self.sprite_list.draw()
+        self.players_list.draw()
+        self.map_list.draw()
+        self.explosions_list.draw()
         self.wall_list.draw()
         self.camera.use()
 
@@ -86,48 +91,52 @@ class ClientView(arcade.Window):
         }
         self.client.push(data)
 
-    def draw_map(self):            
-        if self.map is not None and len(self.map) != 0:
-            self.sprite_list.clear()
-
-            if self.players is not None and len(self.players) != 0:
-                for x in self.players:
-                    sprite_path = cnf.TEXTURES.PLAYER_1 if x[1] == 'player1' else cnf.TEXTURES.PLAYER_2
-                    self.sprite_list.append(arcade.Sprite(sprite_path, 
-                                                                cnf.SIZE,
-                                                                x[0][0],
-                                                                x[0][1]))
-            width = cnf.GRID_SIZE[0]
-            height = cnf.GRID_SIZE[1]
-
-            for x in range(width):
-                for y in range(height):
-                    if not ((x == width-1 or x == 0 or y == 0 or y == height-1) or 
-                        (x % 2 == 0 and y % 2 == 0)):
-                        s = self.map[x][y]
-                        pos = to_global_vector(Vector(x, y))
-                        sprite_path = None
-                        match s:
-                            case cnf.SYMBOLS.block:
-                                sprite_path = cnf.TEXTURES.BLOCK
-                            case cnf.SYMBOLS.add_bomb:
-                                sprite_path = cnf.TEXTURES.ADD_BOMB
-                            case cnf.SYMBOLS.add_explosion_size:
-                                sprite_path = cnf.TEXTURES.ADD_EXPLOSION_SIZE
-                            case cnf.SYMBOLS.bomb:
-                                sprite_path = cnf.TEXTURES.BOMB
-                        if sprite_path is not None:
-                            self.sprite_list.append(arcade.Sprite(sprite_path, 
-                                                            cnf.SIZE,
-                                                            pos.x,
-                                                            pos.y))
+    def draw_players(self, players):
+        self.players_list.clear()
+        for x in players:
+            match x[1]:
+                case "player1":
+                    sprite_path = cnf.TEXTURES.PLAYER_1
+                case _:
+                    sprite_path = cnf.TEXTURES.PLAYER_2
+            self.players_list.append(arcade.Sprite(sprite_path, 
+                                                    cnf.SIZE,
+                                                    x[0][0],
+                                                    x[0][1]))
             
-            if self.eplosions is not None and len(self.eplosions) != 0:
-                for e in self.eplosions:
-                    self.sprite_list.append(arcade.Sprite(cnf.TEXTURES.EXPLOSION, 
-                                                                cnf.SIZE,
-                                                                e[0],
-                                                                e[1]))
+    def draw_explosions(self, explosions):
+        for e in explosions:
+            self.explosions_list.append(arcade.Sprite(cnf.TEXTURES.EXPLOSION, 
+                                                    cnf.SIZE,
+                                                    e[0],
+                                                    e[1]))
+
+    def draw_map(self):
+        self.map_list.clear()
+        width = cnf.GRID_SIZE[0]
+        height = cnf.GRID_SIZE[1]
+
+        for x in range(width):
+            for y in range(height):
+                if not ((x == width-1 or x == 0 or y == 0 or y == height-1) or 
+                    (x % 2 == 0 and y % 2 == 0)):
+                    s = self.map[x][y]
+                    pos = to_global_vector(Vector(x, y))
+                    sprite_path = None
+                    match s:
+                        case cnf.SYMBOLS.block:
+                            sprite_path = cnf.TEXTURES.BLOCK
+                        case cnf.SYMBOLS.add_bomb:
+                            sprite_path = cnf.TEXTURES.ADD_BOMB
+                        case cnf.SYMBOLS.add_explosion_size:
+                            sprite_path = cnf.TEXTURES.ADD_EXPLOSION_SIZE
+                        case cnf.SYMBOLS.bomb:
+                            sprite_path = cnf.TEXTURES.BOMB
+                    if sprite_path is not None:
+                        self.map_list.append(arcade.Sprite(sprite_path, 
+                                                        cnf.SIZE,
+                                                        pos.x,
+                                                        pos.y))
     
     def draw_walls(self):
         width = cnf.GRID_SIZE[0]

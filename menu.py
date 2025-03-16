@@ -18,7 +18,7 @@ def main():
             count = int(input("Введите количество игроков в сети (2-4): "))
             count = 4 if count > 4 else count
             count = 2 if count < 2 else count
-            print(f'Создана локальная компата на порте {IPAddr} для {count} игроков')
+            print(f'Создана локальная комната на порте {IPAddr} для {count} игроков')
             game.start_game(IPAddr, count)
         case 3:
             ip = input("Введите ip адрес игры (формат: 192.168.0.0): ")

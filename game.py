@@ -32,6 +32,7 @@ class GameView(arcade.Window):
 
         self.map = None
         self.sprite_list = arcade.SpriteList()
+        self.map_is_updated = 0
         self.bombs = []
         self.blocks = []
         self.buffs = []
@@ -77,7 +78,7 @@ class GameView(arcade.Window):
             
     def setup_localgame(self, count):
         for i in range(count):
-            self.servers.append(Server(self.host_ip+":555"+str(i), cnf.SERVER_DELTATIME))
+            self.servers.append(Server(self.host_ip+":555"+str(i)))
         
         for i in range(count):
             self.__new_player__(keymap=KeyMap(
@@ -95,8 +96,9 @@ class GameView(arcade.Window):
                         connect_method=self.connect_client)
 
     def connect_client(self, ip):
-        #self.logger.Message(f'{ip}_client successfully connected')
         self.clients.append(Client(ip+":5555"))
+        self.logger.Message(f'{ip}_client successfully connected')
+        self.map_is_updated = 3
 
     def __setup_abstract_objects__(self):
         self.bomb = BombSpecifications(
@@ -166,6 +168,7 @@ class GameView(arcade.Window):
             
         else:
             self.logger.Warning(f"invalid {object.name} spawn at [{pos.x}, {pos.y}]")
+        self.map_is_updated = 3
             
     def explose(self, bomb: Bomb):
         bomb.parent.bomb_list.remove(bomb)
@@ -229,10 +232,7 @@ class GameView(arcade.Window):
         for buff in buff_pos:
             temp = to_map_vector(buff.position)
             if buff in buff_pos:
-                self.buffs.remove(buff)
-                self.map[temp.x][temp.y] = cnf.SYMBOLS.empty
-            if buff.sprite in self.sprite_list:
-                self.sprite_list.remove(buff.sprite)
+                self.remove_buff(temp)
         for bl in block_pos:
             temp = to_map_vector(bl.position)
             #проверка на случай, если несколько бомб с разных сторон взорвут один и тот же блок
@@ -246,6 +246,7 @@ class GameView(arcade.Window):
 
         self.map[bomb_map_position.x][bomb_map_position.y] = symb.empty
         self.sprite_list.remove(bomb.sprite)
+        self.map_is_updated = 3
 
     def __one_explosion__(self, pos: Vector, explosion_group: ExplosionGroup):
         new_go = GameObject(sprite=arcade.Sprite(self.explosion.sprite_path, cnf.SIZE),
@@ -420,6 +421,7 @@ class GameView(arcade.Window):
                 self.map[buff_map_pos.x][buff_map_pos.y] = cnf.SYMBOLS.empty
                 self.sprite_list.remove(b.sprite)
                 self.buffs.remove(b)
+                self.map_is_updated = 3
                 return
 
     def on_update(self, delta_time = 1/30):
@@ -452,14 +454,18 @@ class GameView(arcade.Window):
             for i in self.explosion_list:
                 for e in i.sprite_list:
                     explosions.append((e.center_x, e.center_y))
-
-            #explosions = [[(i.position.x, i.position.y)] for i in self.explosion_list]
+                    
             data = {
-                "map": self.map,
-                "players": players,
-                "eplosions": explosions,
+                "players": players
             }
-            c.push(data)
+            if self.map_is_updated > 0:
+                data['map'] = self.map
+                self.map_is_updated -= 1
+            if len(explosions) != 0:
+                data['explosions'] = explosions
+            
+            if len(self.clients) != 0:
+                c.push(data)
 
     def on_draw(self):
         self.clear()
