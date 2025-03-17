@@ -3,7 +3,7 @@ import game
 import gui_client
 
 def main():
-    IPAddr = socket.gethostbyname(socket.gethostname())
+    my_ip = socket.gethostbyname(socket.gethostname())
 
     cmd = int(input("1. Создать PvP игру на одном компьютере\n"
     "2. Создать игру в локальной сети\n"
@@ -18,13 +18,13 @@ def main():
             count = int(input("Введите количество игроков в сети (2-4): "))
             count = 4 if count > 4 else count
             count = 2 if count < 2 else count
-            print(f'Создана локальная комната на порте {IPAddr} для {count} игроков')
-            game.start_game(IPAddr, count)
+            print(f'Создана локальная комната на порте {my_ip} для {count} игроков')
+            game.start_game(my_ip, count)
         case 3:
             ip = input("Введите ip адрес игры (формат: 192.168.0.0): ")
             if len(str(ip).split('.')) == 4:
                 print(ip)
-                gui_client.start_game(ip)
+                gui_client.start_game(ip, my_ip)
             else:
                 print(f'Неккоректный ip {ip}')
         case _:

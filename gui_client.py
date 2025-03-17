@@ -31,8 +31,8 @@ class ClientView(arcade.Window):
         self.camera.position = ((cnf.WINDOW_SIZE[0]-cnf.SPRITE_SIZE)/2, (cnf.WINDOW_SIZE[1]+(cnf.GUI_SIZE[1]-1)*cnf.SPRITE_SIZE)/2)
 
         self.draw_walls()
+        self.server_setup(my_ip+':5555')
         self.client_setup(host_ip+':5550', my_ip)
-        self.server_setup(host_ip+':5555')
 
     def client_setup(self, host_ip, my_ip):
         self.client = Client(host_ip)
@@ -151,6 +151,6 @@ class ClientView(arcade.Window):
                                                           cnf.SIZE,
                                                           pos.x,
                                                           pos.y))
-def start_game(ip):
-    ClientView(ip, ip)
+def start_game(host_ip, my_ip):
+    ClientView(host_ip, my_ip)
     arcade.run()
