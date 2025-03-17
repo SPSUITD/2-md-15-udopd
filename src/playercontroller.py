@@ -21,6 +21,7 @@ class PlayerController:
         self.rm_buff = rm_buff
         self.map = map
         self.connect_method = connect_method
+        self.current_data = None
         self.source = source    
         if source is not None:
             self.player_disconnection()
@@ -91,7 +92,10 @@ class PlayerController:
         self.player.sprite.size = self.player_size
 
     def server_update(self):
-        self.parse_data(self.source.get_data())
+        data = self.source.get_data()
+        if self.current_data != data:
+            self.current_data = data
+            self.parse_data(data)
 
     def parse_data(self, data):
         if data is not None:

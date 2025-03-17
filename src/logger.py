@@ -15,8 +15,8 @@ class Logger:
 
     def __init__(self):
         global output
-        if output is None:
-            output = open("log.txt", "w")
+        """if output is None:
+            output = open("log.txt", "w")"""
 
     def Error(self, msg):
         global output

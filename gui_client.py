@@ -20,6 +20,7 @@ class ClientView(arcade.Window):
         self.players_list = arcade.SpriteList()
         self.explosions_list = arcade.SpriteList()
         self.wall_list = arcade.SpriteList()
+        self.current_data = None
 
         self.controller = PlayerController(keymap=KeyMap(left=cnf.PLAYER_1_KEYMAP.left,
                       right=cnf.PLAYER_1_KEYMAP.right,
@@ -31,15 +32,16 @@ class ClientView(arcade.Window):
         self.camera.position = ((cnf.WINDOW_SIZE[0]-cnf.SPRITE_SIZE)/2, (cnf.WINDOW_SIZE[1]+(cnf.GUI_SIZE[1]-1)*cnf.SPRITE_SIZE)/2)
 
         self.draw_walls()
-        self.server_setup(my_ip+':5555')
         self.client_setup(host_ip+':5550', my_ip)
+        self.server_setup(my_ip+':5555')
 
     def client_setup(self, host_ip, my_ip):
         self.client = Client(host_ip)
-        self.client.push({
-            'action': 'connect',
-            'ip': my_ip
-            })
+        for i in range(3):
+            self.client.push({
+                'action': 'connect',
+                'ip': my_ip
+                })
 
     def server_setup(self, ip):
         self.server = Server(ip)
@@ -61,16 +63,19 @@ class ClientView(arcade.Window):
     def on_update(self, deltatime):
         self.controller.on_update()
         data = self.server.get_data()
-        if data is not None:
-            if 'map' in data:
-                self.map = data['map']
-                self.draw_map()
-            if 'players' in data:
-                self.draw_players(data['players'])
-            if 'explosions' in data:
-                self.draw_explosions(data['explosions'])
-            else:
-                self.explosions_list.clear()
+        if self.current_data != data:
+            self.current_data = data
+            print(data)
+            if data is not None:
+                if 'map' in data:
+                    self.map = data['map']
+                    self.draw_map()
+                if 'players' in data:
+                    self.draw_players(data['players'])
+                if 'explosions' in data:
+                    self.draw_explosions(data['explosions'])
+                else:
+                    self.explosions_list.clear()
         
     def on_draw(self):
         self.clear()

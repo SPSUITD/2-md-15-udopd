@@ -39,6 +39,7 @@ class GameView(arcade.Window):
         self.player_sprite = None
         self.explosion_list = []
         self.controllers = []
+        self.ips = []
         
         self.clients = []
         self.servers = []
@@ -96,9 +97,11 @@ class GameView(arcade.Window):
                         connect_method=self.connect_client)
 
     def connect_client(self, ip):
-        self.clients.append(Client(ip+":5555"))
-        self.logger.Message(f'{ip}_client successfully connected')
-        self.map_is_updated = 3
+        if ip not in self.ips:
+            self.ips.append(ip)
+            self.clients.append(Client(ip+":5555"))
+            self.logger.Message(f'{ip}_client successfully connected')
+            self.map_is_updated = 3
 
     def __setup_abstract_objects__(self):
         self.bomb = BombSpecifications(
