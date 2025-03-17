@@ -29,10 +29,11 @@ class GameView(arcade.Window):
 
     def setup(self, count):
         self.logger = Logger()
+        self.current_state = None
 
         self.map = None
         self.sprite_list = arcade.SpriteList()
-        self.map_is_updated = 0
+        self.map_is_updated = True
         self.bombs = []
         self.blocks = []
         self.buffs = []
@@ -97,11 +98,12 @@ class GameView(arcade.Window):
                         connect_method=self.connect_client)
 
     def connect_client(self, ip):
+        print('connect')
         if ip not in self.ips:
             self.ips.append(ip)
             self.clients.append(Client(ip+":5555"))
             self.logger.Message(f'{ip}_client successfully connected')
-            self.map_is_updated = 3
+            self.map_is_updated = True
 
     def __setup_abstract_objects__(self):
         self.bomb = BombSpecifications(
@@ -424,7 +426,7 @@ class GameView(arcade.Window):
                 self.map[buff_map_pos.x][buff_map_pos.y] = cnf.SYMBOLS.empty
                 self.sprite_list.remove(b.sprite)
                 self.buffs.remove(b)
-                self.map_is_updated = 3
+                self.map_is_updated = True
                 return
 
     def on_update(self, delta_time = 1/30):
@@ -450,25 +452,29 @@ class GameView(arcade.Window):
             if c.source is not None:
                 c.server_update()
                 
-        for c in self.clients:
-            players = [[(i.player.position.x, i.player.position.y), i.player.name] for i in self.controllers]
 
-            explosions = []
-            for i in self.explosion_list:
-                for e in i.sprite_list:
-                    explosions.append((e.center_x, e.center_y))
-                    
-            data = {
-                "players": players
-            }
-            if self.map_is_updated > 0:
-                data['map'] = self.map
-                self.map_is_updated -= 1
-            if len(explosions) != 0:
-                data['explosions'] = explosions
-            
-            if len(self.clients) != 0:
-                c.push(data)
+        players = [[(round(i.player.position.x, 3), round(i.player.position.y, 3)), i.player.name] for i in self.controllers]
+        explosions = []
+        for i in self.explosion_list:
+            for e in i.sprite_list:
+                explosions.append((e.center_x, e.center_y))
+                
+        data = {
+            "players": players
+        }
+        if self.map_is_updated:
+            data['map'] = self.map
+            self.map_is_updated = False
+        if len(explosions) != 0:
+            data['explosions'] = explosions
+        else:
+            data['explosions'] = 'None'
+
+        if self.current_state != data:
+            self.current_state = data
+            for c in self.clients:
+                if len(self.clients) != 0:
+                    c.push(data)
 
     def on_draw(self):
         self.clear()

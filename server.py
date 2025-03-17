@@ -4,7 +4,7 @@ import json
 
 class Server:
     def __init__(self, pull_ip):
-        self.__data = None
+        self.__data = {}
         self.context = zmq.Context()
         self.pull_socket = self.context.socket(zmq.PULL)
         self.pull_socket.bind('tcp://'+pull_ip)
@@ -13,7 +13,9 @@ class Server:
 
     def run(self):
         while True:
-            self.__data = json.loads(self.pull_socket.recv_json())
+            data = json.loads(self.pull_socket.recv_json())
+            for k in data:
+                self.__data[k] = data[k]
 
     def get_data(self):
         return self.__data

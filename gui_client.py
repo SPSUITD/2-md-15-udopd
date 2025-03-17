@@ -20,7 +20,10 @@ class ClientView(arcade.Window):
         self.players_list = arcade.SpriteList()
         self.explosions_list = arcade.SpriteList()
         self.wall_list = arcade.SpriteList()
-        self.current_data = None
+        self.current_state = None
+        self.current_data = ''
+        self.map = ''
+        self.spawn = False
 
         self.controller = PlayerController(keymap=KeyMap(left=cnf.PLAYER_1_KEYMAP.left,
                       right=cnf.PLAYER_1_KEYMAP.right,
@@ -32,15 +35,13 @@ class ClientView(arcade.Window):
         self.camera.position = ((cnf.WINDOW_SIZE[0]-cnf.SPRITE_SIZE)/2, (cnf.WINDOW_SIZE[1]+(cnf.GUI_SIZE[1]-1)*cnf.SPRITE_SIZE)/2)
 
         self.draw_walls()
-        self.client_setup(host_ip+':5550', my_ip)
         self.server_setup(my_ip+':5555')
+        self.client_setup(host_ip+':5550', my_ip)
 
     def client_setup(self, host_ip, my_ip):
         self.client = Client(host_ip)
-        for i in range(3):
-            self.client.push({
-                'action': 'connect',
-                'ip': my_ip
+        self.client.push({
+                'connect': my_ip,
                 })
 
     def server_setup(self, ip):
@@ -48,34 +49,34 @@ class ClientView(arcade.Window):
         
     def on_key_press(self, key, modifiers):
         self.controller.on_key_press(key)
-        if key == self.controller.keymap.spawn:
-            data = {
-                'action': 'spawn'
-            }
-            self.client.push(data)
+        if key == self.controller.keymap.spawn and not self.spawn:
+            self.spawn = True
+            print('spawn')
+            self.client.push({'action': 'spawn'})
         else:
             self.push_direction()
 
     def on_key_release(self, key, modifiers):
-        self.controller.on_key_release(key)
+        if key == self.controller.keymap.spawn:
+            self.spawn = False
+        self.controller.on_key_release(key) 
         self.push_direction()
         
     def on_update(self, deltatime):
         self.controller.on_update()
         data = self.server.get_data()
-        if self.current_data != data:
-            self.current_data = data
-            print(data)
-            if data is not None:
-                if 'map' in data:
-                    self.map = data['map']
-                    self.draw_map()
-                if 'players' in data:
-                    self.draw_players(data['players'])
-                if 'explosions' in data:
+        if self.current_data != str(data):
+            if 'map' in data and self.map != data['map']:
+                self.map = data['map']
+                self.draw_map()
+            if 'players' in data:
+                self.draw_players(data['players'])
+            if 'explosions' in data:
+                if data['explosions'] != 'None':
                     self.draw_explosions(data['explosions'])
                 else:
                     self.explosions_list.clear()
+            self.current_data = str(data)
         
     def on_draw(self):
         self.clear()
@@ -94,7 +95,9 @@ class ClientView(arcade.Window):
             'left': km.left.is_pressed,
             'right': km.right.is_pressed,
         }
-        self.client.push(data)
+        if self.current_state != data:
+            self.current_state = data
+            self.client.push(data)
 
     def draw_players(self, players):
         self.players_list.clear()

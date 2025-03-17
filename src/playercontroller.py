@@ -17,12 +17,13 @@ class PlayerController:
         self.direction = zero_vector()
         self.spawn_bomb_method = spawn_bomb_method
         self.player = player
+        self.player_is_connected = False
         self.keymap = keymap
         self.rm_buff = rm_buff
         self.map = map
         self.connect_method = connect_method
         self.current_data = None
-        self.source = source    
+        self.source = source
         if source is not None:
             self.player_disconnection()
             
@@ -93,12 +94,14 @@ class PlayerController:
 
     def server_update(self):
         data = self.source.get_data()
-        if self.current_data != data:
-            self.current_data = data
-            self.parse_data(data)
+        self.parse_data(data)
 
     def parse_data(self, data):
-        if data is not None:
+        if 'connect' in data and not self.player_is_connected:
+                self.connect_method(data['connect'])
+                self.player_connect()
+                self.player_is_connected = True
+        if 'action' in data:
             match data['action']:
                 case 'direction':
                     self.keymap.up.is_pressed = data['up']
@@ -107,9 +110,6 @@ class PlayerController:
                     self.keymap.right.is_pressed = data['right']
                 case 'spawn':
                     self.spawn()
-                case 'connect':
-                    self.connect_method(data['ip'])
-                    self.player_connect()
 
     def collision(self):
         if self.direction.x != 0 or self.direction.y != 0:
