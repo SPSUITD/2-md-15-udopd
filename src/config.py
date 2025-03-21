@@ -1,11 +1,10 @@
 SIZE = 0.3
-SPRITE_SIZE = 64*2*SIZE
-GRID_SIZE = (17, 13) #(17, 13)
+SPRITE_SIZE = 128*SIZE
+GRID_SIZE = (17, 13)
 WINDOW_SIZE = (GRID_SIZE[0]*SPRITE_SIZE, (GRID_SIZE[1])*SPRITE_SIZE)
-GUI_SIZE = (0, 0)
 WINDOW_TITLE = "B0mberm@n"
 
-PLAYER_SPEED = 4*2*SIZE
+PLAYER_SPEED = 8*SIZE
 BUFF_LIFETIME = 500
 BUFF_PROBABILITY = 0.2
 
@@ -50,3 +49,4 @@ class BOMB_CONFIG:
     count = 1 #max count of active bombs
     lifetime = 150 #ticks
     size = 2 #cells
+    

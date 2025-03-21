@@ -17,17 +17,24 @@ from server import Server
 from client import Client
 
 class GameView(arcade.Window):
-    def __init__(self, host_ip = ''):
+    def __init__(self, host_ip = '', count = 0):
         name = ''
         if host_ip != '':
-            name = f"_host ({host_ip})"
+            name = f'_host ip:({host_ip}) ports:('
+            for i in range(count-1):
+                name += f'555{i}'
+                if i != count-2:
+                    name += f'; '
+        name += ')'
 
-        super().__init__(cnf.WINDOW_SIZE[0]+cnf.GUI_SIZE[0]*cnf.SPRITE_SIZE, cnf.WINDOW_SIZE[1]+cnf.GUI_SIZE[1]*cnf.SPRITE_SIZE, cnf.WINDOW_TITLE+name)
+        super().__init__(cnf.WINDOW_SIZE[0], cnf.WINDOW_SIZE[1], cnf.WINDOW_TITLE+name)
         self.background_color = arcade.csscolor.LIGHT_GREEN
+        
         self.center_window()
+        self.count = count
         self.host_ip = host_ip
 
-    def setup(self, count):
+    def setup(self):
         self.logger = Logger()
         self.current_state = None
 
@@ -41,6 +48,7 @@ class GameView(arcade.Window):
         self.explosion_list = []
         self.controllers = []
         self.ips = []
+        self.current_players_count = self.count - 1
         
         self.clients = []
         self.servers = []
@@ -60,10 +68,10 @@ class GameView(arcade.Window):
                     position=to_global_vector(Vector(cnf.PLAYER_POS[0][0], cnf.PLAYER_POS[0][1])),
                     bomb_specifications = self.bomb)
         
-        if count == 0:
+        if self.count == 0:
             self.setup_pvp_game()
         else:
-            self.setup_localgame(count-1)
+            self.setup_localgame(self.count-1)
     
     def setup_pvp_game(self):
         self.__new_player__(keymap=KeyMap(
@@ -98,10 +106,20 @@ class GameView(arcade.Window):
                         connect_method=self.connect_client)
 
     def connect_client(self, ip):
-        print('connect')
         if ip not in self.ips:
+            self.current_players_count -= 1
+
+            name = self.caption
+            if self.current_players_count > 0:
+                port = str.split(ip, ':')
+                name = name.replace(port[1], "")
+            else:
+                port = str.split(name, '_')
+                name = port[0]
+            self.set_caption(name)
+                
             self.ips.append(ip)
-            self.clients.append(Client(ip+":5555"))
+            self.clients.append(Client(ip))
             self.logger.Message(f'{ip}_client successfully connected')
             self.map_is_updated = True
 
@@ -145,7 +163,7 @@ class GameView(arcade.Window):
 
     def __camera_setup__(self):
         self.camera = arcade.camera.Camera2D()
-        self.camera.position = ((cnf.WINDOW_SIZE[0]-cnf.SPRITE_SIZE)/2, (cnf.WINDOW_SIZE[1]+(cnf.GUI_SIZE[1]-1)*cnf.SPRITE_SIZE)/2)
+        self.camera.position = ((cnf.WINDOW_SIZE[0]-cnf.SPRITE_SIZE)/2, (cnf.WINDOW_SIZE[1]-cnf.SPRITE_SIZE)/2)
 
     def spawn(self, object: AbstractObject, pos: Vector, player: Player):
         if self.map[pos.x][pos.y] == symb.empty:
@@ -448,11 +466,14 @@ class GameView(arcade.Window):
                 self.remove_buff(to_map_vector(b.position))
 
         for c in self.controllers:
-            c.on_update()
+            if self.current_players_count <= 0:
+                c.on_update()
             if c.source is not None:
                 c.server_update()
                 
+        self.send_data()
 
+    def send_data(self):
         players = [[(round(i.player.position.x, 3), round(i.player.position.y, 3)), i.player.name] for i in self.controllers]
         explosions = []
         for i in self.explosion_list:
@@ -460,7 +481,8 @@ class GameView(arcade.Window):
                 explosions.append((e.center_x, e.center_y))
                 
         data = {
-            "players": players
+            "players": players,
+            "game_size": cnf.SIZE
         }
         if self.map_is_updated:
             data['map'] = self.map
@@ -470,8 +492,8 @@ class GameView(arcade.Window):
         else:
             data['explosions'] = 'None'
 
-        if self.current_state != data:
-            self.current_state = data
+        if self.current_state != str(data):
+            self.current_state = str(data)
             for c in self.clients:
                 if len(self.clients) != 0:
                     c.push(data)
@@ -485,6 +507,6 @@ class GameView(arcade.Window):
 
 
 def start_game(host_api='', count=0):
-    window = GameView(host_api)
-    window.setup(count)
+    window = GameView(host_api, count)
+    window.setup()
     arcade.run()

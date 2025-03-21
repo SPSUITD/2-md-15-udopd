@@ -1,7 +1,7 @@
 import arcade
 import time
-
 import src.config as cnf
+
 from src.keymap import KeyMap
 from src.playercontroller import PlayerController
 from src.vector import Vector, to_global_vector
@@ -11,8 +11,8 @@ from server import Server
 class ClientView(arcade.Window):
     controller: PlayerController
     
-    def __init__(self, host_ip, my_ip):
-        super().__init__(cnf.WINDOW_SIZE[0]+cnf.GUI_SIZE[0]*cnf.SPRITE_SIZE, cnf.WINDOW_SIZE[1]+cnf.GUI_SIZE[1]*cnf.SPRITE_SIZE, cnf.WINDOW_TITLE+'_client')
+    def __init__(self, server, client):
+        super().__init__(cnf.WINDOW_SIZE[0], cnf.WINDOW_SIZE[1], cnf.WINDOW_TITLE+'_client')
         self.background_color = arcade.csscolor.LIGHT_GREEN
         self.center_window()
         self.direction = Vector(0, 0)
@@ -32,26 +32,16 @@ class ClientView(arcade.Window):
                       spawn=cnf.PLAYER_1_KEYMAP.spawn))
         
         self.camera = arcade.camera.Camera2D()
-        self.camera.position = ((cnf.WINDOW_SIZE[0]-cnf.SPRITE_SIZE)/2, (cnf.WINDOW_SIZE[1]+(cnf.GUI_SIZE[1]-1)*cnf.SPRITE_SIZE)/2)
+        self.camera.position = ((cnf.WINDOW_SIZE[0]-cnf.SPRITE_SIZE)/2, (cnf.WINDOW_SIZE[1]-cnf.SPRITE_SIZE)/2)
 
+        self.server = server
+        self.client = client
         self.draw_walls()
-        self.server_setup(my_ip+':5555')
-        self.client_setup(host_ip+':5550', my_ip)
-
-    def client_setup(self, host_ip, my_ip):
-        self.client = Client(host_ip)
-        self.client.push({
-                'connect': my_ip,
-                })
-
-    def server_setup(self, ip):
-        self.server = Server(ip)
         
     def on_key_press(self, key, modifiers):
         self.controller.on_key_press(key)
         if key == self.controller.keymap.spawn and not self.spawn:
             self.spawn = True
-            print('spawn')
             self.client.push({'action': 'spawn'})
         else:
             self.push_direction()
@@ -160,5 +150,21 @@ class ClientView(arcade.Window):
                                                           pos.x,
                                                           pos.y))
 def start_game(host_ip, my_ip):
-    ClientView(host_ip, my_ip)
+    client = Client(host_ip)
+    my_ip += ":5555"
+    client.push({
+            'connect': my_ip,
+            })
+    server = Server(my_ip)
+    while not ('game_size' in server.get_data()):
+        time.sleep(0.1)
+    
+    size = server.get_data()['game_size']
+    cnf.SIZE = size
+    cnf.SPRITE_SIZE = 128*size
+    cnf.PLAYER_SPEED = 8*size
+    cnf.WINDOW_SIZE = (cnf.GRID_SIZE[0]*cnf.SPRITE_SIZE, 
+                       (cnf.GRID_SIZE[1])*cnf.SPRITE_SIZE)
+        
+    ClientView(server, client)
     arcade.run()

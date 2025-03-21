@@ -21,12 +21,13 @@ def main():
             print(f'Создана локальная комната на порте {my_ip} для {count} игроков')
             game.start_game(my_ip, count)
         case 3:
-            ip = input("Введите ip адрес игры (формат: 192.168.0.0): ")
-            if len(str(ip).split('.')) == 4:
-                print(ip)
-                gui_client.start_game(ip, my_ip)
+            print("Введите ip-адрес игры (формат: 192.168.0.0:0000)")
+            host_ip = input("(ip и доступные порты вы можете узнать в окне хоста игры): ")
+            if len(str(host_ip).split('.')) == 4 and ":" in host_ip:
+                print(host_ip)
+                gui_client.start_game(host_ip, my_ip)
             else:
-                print(f'Неккоректный ip {ip}')
+                print(f'Неккоректный ip: {host_ip} (требуемый формат: 192.168.0.0:0000)')
         case _:
             print("Выход")
             
