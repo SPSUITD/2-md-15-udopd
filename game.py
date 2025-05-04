@@ -456,7 +456,7 @@ class GameView(arcade.Window):
 
         for b in self.bombs:
             if isinstance(b, Bomb):
-                b.lifetime -= 1
+                b.update()
                 if b.lifetime == 0:
                     self.explose(b)
 

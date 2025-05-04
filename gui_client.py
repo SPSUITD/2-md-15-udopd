@@ -1,7 +1,9 @@
 import arcade
 import time
+import math
 import src.config as cnf
 
+from src.bomb import Bomb
 from src.keymap import KeyMap
 from src.playercontroller import PlayerController
 from src.vector import Vector, to_global_vector
@@ -17,6 +19,7 @@ class ClientView(arcade.Window):
         self.center_window()
         self.direction = Vector(0, 0)
         self.map_list = arcade.SpriteList()
+        self.bombs = arcade.SpriteList()
         self.players_list = arcade.SpriteList()
         self.explosions_list = arcade.SpriteList()
         self.wall_list = arcade.SpriteList()
@@ -55,6 +58,17 @@ class ClientView(arcade.Window):
     def on_update(self, deltatime):
         self.controller.on_update()
         data = self.server.get_data()
+
+        rem_bombs = []
+        for b in self.bombs:
+            b.lifetime += 1
+            b.scale = cnf.SIZE* (0.9 - math.cos((b.lifetime / 10) % 180)/10)
+            if b.lifetime >= cnf.BOMB_CONFIG.lifetime:
+                rem_bombs.append(b)
+
+        for rb in rem_bombs:
+            self.bombs.remove(rb)
+        
         if self.current_data != str(data):
             if 'map' in data and self.map != data['map']:
                 self.map = data['map']
@@ -72,6 +86,7 @@ class ClientView(arcade.Window):
         self.clear()
         self.players_list.draw()
         self.map_list.draw()
+        self.bombs.draw()
         self.explosions_list.draw()
         self.wall_list.draw()
         self.camera.use()
@@ -103,11 +118,23 @@ class ClientView(arcade.Window):
                                                     x[0][1]))
             
     def draw_explosions(self, explosions):
+        rem_bombs = []
+        
         for e in explosions:
             self.explosions_list.append(arcade.Sprite(cnf.TEXTURES.EXPLOSION, 
                                                     cnf.SIZE,
                                                     e[0],
                                                     e[1]))
+            if self.bombs_contains(e[0], e[1]):
+                for b in self.bombs:
+                    if b.center_x == e[0] and b.center_y == e[1]:
+                        rem_bombs.append(b)
+                        break
+        
+        for rb in rem_bombs:
+            if rb in self.bombs:
+                self.bombs.remove(rb)
+
 
     def draw_map(self):
         self.map_list.clear()
@@ -129,13 +156,24 @@ class ClientView(arcade.Window):
                         case cnf.SYMBOLS.add_explosion_size:
                             sprite_path = cnf.TEXTURES.ADD_EXPLOSION_SIZE
                         case cnf.SYMBOLS.bomb:
-                            sprite_path = cnf.TEXTURES.BOMB
-                    if sprite_path is not None:
+                            temp = arcade.Sprite(cnf.TEXTURES.BOMB, 
+                                                        cnf.SIZE,
+                                                        pos.x,
+                                                        pos.y)
+                            if not self.bombs_contains(pos.x, pos.y):
+                                temp.lifetime = 0
+                                self.bombs.append(temp)
+                    if sprite_path is not None and sprite_path is not cnf.TEXTURES.BOMB:
                         self.map_list.append(arcade.Sprite(sprite_path, 
                                                         cnf.SIZE,
                                                         pos.x,
                                                         pos.y))
-    
+    def bombs_contains(self, bomb_x, bomb_y):
+        for b in self.bombs:
+            if b.center_x == bomb_x and b.center_y == bomb_y:
+                return True
+        return False
+
     def draw_walls(self):
         width = cnf.GRID_SIZE[0]
         height = cnf.GRID_SIZE[1]
