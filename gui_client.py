@@ -135,7 +135,6 @@ class ClientView(arcade.Window):
             if rb in self.bombs:
                 self.bombs.remove(rb)
 
-
     def draw_map(self):
         self.map_list.clear()
         width = cnf.GRID_SIZE[0]
@@ -168,6 +167,7 @@ class ClientView(arcade.Window):
                                                         cnf.SIZE,
                                                         pos.x,
                                                         pos.y))
+    
     def bombs_contains(self, bomb_x, bomb_y):
         for b in self.bombs:
             if b.center_x == bomb_x and b.center_y == bomb_y:
@@ -187,6 +187,7 @@ class ClientView(arcade.Window):
                                                           cnf.SIZE,
                                                           pos.x,
                                                           pos.y))
+
 def start_game(host_ip, my_ip):
     client = Client(host_ip)
     my_ip += ":5555"
@@ -206,3 +207,4 @@ def start_game(host_ip, my_ip):
         
     ClientView(server, client)
     arcade.run()
+    

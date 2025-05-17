@@ -5,7 +5,8 @@ import gui_client
 def main():
     my_ip = socket.gethostbyname(socket.gethostname())
 
-    cmd = int(input("1. Создать PvP игру на одном компьютере\n"
+    cmd = int(input("B0mberm@n!\n"
+    "1. Создать PvP игру на одном компьютере\n"
     "2. Создать игру в локальной сети\n"
     "3. Подключиться к игре в локальной сети\n"
     "0. Выйти\n"))

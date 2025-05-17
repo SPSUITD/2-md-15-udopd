@@ -25,7 +25,7 @@ class GameView(arcade.Window):
                 name += f'555{i}'
                 if i != count-2:
                     name += f'; '
-        name += ')'
+            name += ')'
 
         super().__init__(cnf.WINDOW_SIZE[0], cnf.WINDOW_SIZE[1], cnf.WINDOW_TITLE+name)
         self.background_color = arcade.csscolor.LIGHT_GREEN
@@ -249,7 +249,7 @@ class GameView(arcade.Window):
         for p in players:
             if p.player.sprite in self.sprite_list:
                 self.sprite_list.remove(p.player.sprite)
-            self.controllers.remove(p) #заглушка
+            self.controllers.remove(p)
         for b in explose_list:
             self.explose(b)
         for buff in buff_pos:
@@ -258,7 +258,6 @@ class GameView(arcade.Window):
                 self.remove_buff(temp)
         for bl in block_pos:
             temp = to_map_vector(bl.position)
-            #проверка на случай, если несколько бомб с разных сторон взорвут один и тот же блок
             if bl in self.blocks:
                 self.blocks.remove(bl)
                 self.map[temp.x][temp.y] = cnf.SYMBOLS.empty
@@ -266,7 +265,6 @@ class GameView(arcade.Window):
             if bl.sprite in self.sprite_list:
                 self.sprite_list.remove(bl.sprite)
         
-
         self.map[bomb_map_position.x][bomb_map_position.y] = symb.empty
         self.sprite_list.remove(bomb.sprite)
         self.map_is_updated = 3
@@ -277,7 +275,6 @@ class GameView(arcade.Window):
                             position=to_global_vector(pos))
         new_go.lifetime = 20
         explosion_group.sprite_list.append(new_go.sprite)
-        #self.explosion_list.append(new_go)
 
     def __spawn_explosion__(self, pos: Vector, size: int):
         explosion_group = ExplosionGroup(20)
