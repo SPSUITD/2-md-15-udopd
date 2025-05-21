@@ -39,7 +39,9 @@ class GameView(arcade.Window):
         self.current_state = None
 
         self.map = None
+        self.screen_delay = cnf.SCREEN_DELAY
         self.sprite_list = arcade.SpriteList()
+        self.__screen = None
         self.map_is_updated = True
         self.bombs = []
         self.blocks = []
@@ -48,6 +50,8 @@ class GameView(arcade.Window):
         self.explosion_list = []
         self.controllers = []
         self.ips = []
+        self.is_local = False
+        self.player_name = None
         self.current_players_count = self.count - 1
         
         self.clients = []
@@ -69,8 +73,10 @@ class GameView(arcade.Window):
                     bomb_specifications = self.bomb)
         
         if self.count == 0:
+            self.is_local = True
             self.setup_pvp_game()
         else:
+            self.player_name = "player1"
             self.setup_localgame(self.count-1)
     
     def setup_pvp_game(self):
@@ -81,7 +87,7 @@ class GameView(arcade.Window):
             down=cnf.PLAYER_2_KEYMAP.down,
             spawn=cnf.PLAYER_2_KEYMAP.spawn
         ), 
-                    name='player1',
+                    name='player2',
                     texture_path=cnf.TEXTURES.PLAYER_2, 
                     position=to_global_vector(Vector(cnf.PLAYER_POS[1][0], cnf.PLAYER_POS[1][1])),
                     bomb_specifications = self.bomb)
@@ -185,7 +191,8 @@ class GameView(arcade.Window):
                 new_go.lifetime = cnf.BUFF_LIFETIME
                 self.buffs.append(new_go)
             
-            self.sprite_list.append(new_go.sprite)
+            if self.screen_delay > 0:
+                self.sprite_list.append(new_go.sprite)
             self.map[pos.x][pos.y] = object.symbol
             self.logger.Message(f"{object.name} spawn at [{pos.x}, {pos.y}]")
             
@@ -247,9 +254,28 @@ class GameView(arcade.Window):
                                         f"remove the block at [{temp_contr_pos.x}, {temp_contr_pos.y}]")
         
         for p in players:
+            if p.player.name == self.player_name:
+                self.__screen = arcade.Sprite(cnf.TEXTURES.YOU_LOSE, cnf.SIZE)
+                pos = to_global_vector(Vector((cnf.GRID_SIZE[0]-1)/2, (cnf.GRID_SIZE[1]-1)/2))
+                self.__screen.center_x = pos.x
+                self.__screen.center_y = pos.y
             if p.player.sprite in self.sprite_list:
                 self.sprite_list.remove(p.player.sprite)
             self.controllers.remove(p)
+
+        if len(self.controllers) == 1:
+            if self.is_local:
+                if self.controllers[0].player.name == "player2":
+                    self.__screen = arcade.Sprite(cnf.TEXTURES.WIN2, cnf.SIZE)
+                else:
+                    self.__screen = arcade.Sprite(cnf.TEXTURES.WIN1, cnf.SIZE)
+            else:
+                if self.__screen is None:
+                    self.__screen = arcade.Sprite(cnf.TEXTURES.YOU_WIN, cnf.SIZE)
+            pos = to_global_vector(Vector((cnf.GRID_SIZE[0]-1)/2, (cnf.GRID_SIZE[1]-1)/2))
+            self.__screen.center_x = pos.x
+            self.__screen.center_y = pos.y
+
         for b in explose_list:
             self.explose(b)
         for buff in buff_pos:
@@ -266,7 +292,8 @@ class GameView(arcade.Window):
                 self.sprite_list.remove(bl.sprite)
         
         self.map[bomb_map_position.x][bomb_map_position.y] = symb.empty
-        self.sprite_list.remove(bomb.sprite)
+        if self.screen_delay > 0:
+            self.sprite_list.remove(bomb.sprite)
         self.map_is_updated = 3
 
     def __one_explosion__(self, pos: Vector, explosion_group: ExplosionGroup):
@@ -439,7 +466,8 @@ class GameView(arcade.Window):
             buff_map_pos = to_map_vector(b.position)
             if buff_map_pos.x == buff_pos.x and buff_map_pos.y == buff_pos.y: 
                 self.map[buff_map_pos.x][buff_map_pos.y] = cnf.SYMBOLS.empty
-                self.sprite_list.remove(b.sprite)
+                if b.sprite in self.sprite_list:
+                    self.sprite_list.remove(b.sprite)
                 self.buffs.remove(b)
                 self.map_is_updated = True
                 return
@@ -471,7 +499,15 @@ class GameView(arcade.Window):
         self.send_data()
 
     def send_data(self):
-        players = [[(round(i.player.position.x, 3), round(i.player.position.y, 3)), i.player.name] for i in self.controllers]
+        players = []
+        active_players = []
+        for i in self.controllers:
+            players.append(((round(i.player.position.x, 3), round(i.player.position.y, 3)), i.player.name))
+            active_players.append(i.player.name)
+        for i in range(4):
+            if "player"+str(i) not in active_players:
+                players.append([(-1, -1), "player"+str(i)+"killed"])
+        
         explosions = []
         for i in self.explosion_list:
             for e in i.sprite_list:
@@ -499,9 +535,18 @@ class GameView(arcade.Window):
         self.clear()
         self.camera.use()
         self.sprite_list.draw()
-        for g in self.explosion_list:
-            g.sprite_list.draw()
 
+        if self.screen_delay > 0:
+            for g in self.explosion_list:
+                g.sprite_list.draw()
+        
+        if self.__screen is not None:
+            if self.screen_delay > 0:
+                self.screen_delay -= 1
+            elif self.screen_delay == 0:
+                self.screen_delay -= 1
+                self.sprite_list.clear()
+                self.sprite_list.append(self.__screen)
 
 def start_game(host_api='', count=0):
     window = GameView(host_api, count)

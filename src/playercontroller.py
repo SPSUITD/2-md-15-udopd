@@ -13,7 +13,8 @@ class PlayerController:
     map: None
     rm_buff: None
 
-    def __init__(self, keymap, player = None, spawn_bomb_method = None, map: list[list[str]] = None, rm_buff = None, source: Server = None, connect_method = None):
+    def __init__(self, keymap, player = None, spawn_bomb_method = None, 
+                 map: list[list[str]] = None, rm_buff = None, source: Server = None, connect_method = None):
         self.direction = zero_vector()
         self.spawn_bomb_method = spawn_bomb_method
         self.player = player

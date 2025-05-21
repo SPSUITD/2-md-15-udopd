@@ -3,7 +3,6 @@ import time
 import math
 import src.config as cnf
 
-from src.bomb import Bomb
 from src.keymap import KeyMap
 from src.playercontroller import PlayerController
 from src.vector import Vector, to_global_vector
@@ -13,11 +12,12 @@ from server import Server
 class ClientView(arcade.Window):
     controller: PlayerController
     
-    def __init__(self, server, client):
+    def __init__(self, server, client, name):
         super().__init__(cnf.WINDOW_SIZE[0], cnf.WINDOW_SIZE[1], cnf.WINDOW_TITLE+'_client')
         self.background_color = arcade.csscolor.LIGHT_GREEN
         self.center_window()
         self.direction = Vector(0, 0)
+        self.player_name = name
         self.map_list = arcade.SpriteList()
         self.bombs = arcade.SpriteList()
         self.players_list = arcade.SpriteList()
@@ -27,6 +27,8 @@ class ClientView(arcade.Window):
         self.current_data = ''
         self.map = ''
         self.spawn = False
+        self.__screen = None
+        self.screen_delay = cnf.SCREEN_DELAY
 
         self.controller = PlayerController(keymap=KeyMap(left=cnf.PLAYER_1_KEYMAP.left,
                       right=cnf.PLAYER_1_KEYMAP.right,
@@ -59,6 +61,34 @@ class ClientView(arcade.Window):
         self.controller.on_update()
         data = self.server.get_data()
 
+        if 'players' in data and self.map != data['players']:
+            win = True
+            lose_count = 0
+            for x in data['players']:
+                if "killed" in x[1]:
+                    lose_count +=1
+                    if x[1] == self.player_name + "killed":
+                        win = False
+                        self.__screen = arcade.Sprite(cnf.TEXTURES.YOU_LOSE, cnf.SIZE)
+                        pos = to_global_vector(Vector((cnf.GRID_SIZE[0]-1)/2, (cnf.GRID_SIZE[1]-1)/2))
+                        self.__screen.center_x = pos.x
+                        self.__screen.center_y = pos.y
+                match x[1]:
+                    case self.player_name:
+                        sprite_path = cnf.TEXTURES.PLAYER_1
+                    case _:
+                        sprite_path = cnf.TEXTURES.PLAYER_2
+                self.players_list.append(arcade.Sprite(sprite_path, 
+                                                        cnf.SIZE,
+                                                        x[0][0],
+                                                        x[0][1]))
+                
+            if lose_count == len(data['players']) - 1 and win and self.__screen is None:
+                self.__screen = arcade.Sprite(cnf.TEXTURES.YOU_WIN, cnf.SIZE)
+                pos = to_global_vector(Vector((cnf.GRID_SIZE[0]-1)/2, (cnf.GRID_SIZE[1]-1)/2))
+                self.__screen.center_x = pos.x
+                self.__screen.center_y = pos.y
+
         rem_bombs = []
         for b in self.bombs:
             b.lifetime += 1
@@ -83,6 +113,13 @@ class ClientView(arcade.Window):
             self.current_data = str(data)
         
     def on_draw(self):
+        if self.__screen is not None:
+            if self.screen_delay > 0:
+                self.screen_delay -= 1
+            elif self.screen_delay == 0:
+                self.screen_delay -= 1
+                self.wall_list.append(self.__screen)
+
         self.clear()
         self.players_list.draw()
         self.map_list.draw()
@@ -108,7 +145,7 @@ class ClientView(arcade.Window):
         self.players_list.clear()
         for x in players:
             match x[1]:
-                case "player1":
+                case self.player_name:
                     sprite_path = cnf.TEXTURES.PLAYER_1
                 case _:
                     sprite_path = cnf.TEXTURES.PLAYER_2
@@ -189,8 +226,10 @@ class ClientView(arcade.Window):
                                                           pos.y))
 
 def start_game(host_ip, my_ip):
+    index = str(int(host_ip[-1])+2)
+    name = "player" + index
     client = Client(host_ip)
-    my_ip += ":5555"
+    my_ip += ":" + index + "555"
     client.push({
             'connect': my_ip,
             })
@@ -205,6 +244,6 @@ def start_game(host_ip, my_ip):
     cnf.WINDOW_SIZE = (cnf.GRID_SIZE[0]*cnf.SPRITE_SIZE, 
                        (cnf.GRID_SIZE[1])*cnf.SPRITE_SIZE)
         
-    ClientView(server, client)
+    ClientView(server, client, name)
     arcade.run()
     

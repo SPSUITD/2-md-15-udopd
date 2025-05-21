@@ -1,9 +1,10 @@
-SIZE = 0.4
+SIZE = 0.3
 SPRITE_SIZE = 128*SIZE
 GRID_SIZE = (17, 13)
 WINDOW_SIZE = (GRID_SIZE[0]*SPRITE_SIZE, (GRID_SIZE[1])*SPRITE_SIZE)
 WINDOW_TITLE = "B0mberm@n"
 
+SCREEN_DELAY = 100
 PLAYER_SPEED = 8*SIZE
 BUFF_LIFETIME = 500
 BUFF_PROBABILITY = 0.2
@@ -22,6 +23,10 @@ class TEXTURES:
     EXPLOSION = "sprites/explosion.png"
     ADD_BOMB = "sprites/buffBomb.png"
     ADD_EXPLOSION_SIZE = "sprites/buffPower.png"
+    WIN2 = "sprites/2win.png"
+    WIN1 = "sprites/1win.png"
+    YOU_WIN = "sprites/youwin.png"
+    YOU_LOSE = "sprites/youlose.png"
 
 class SYMBOLS:
     bomb = '@'
@@ -46,7 +51,7 @@ class PLAYER_2_KEYMAP:
     spawn='BACKSPACE'
 
 class BOMB_CONFIG:
-    count = 1 #max count of active bombs
-    lifetime = 150 #ticks
-    size = 2 #cells
+    count = 1
+    lifetime = 150
+    size = 2
     
