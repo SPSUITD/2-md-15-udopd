@@ -275,6 +275,12 @@ class GameView(arcade.Window):
             pos = to_global_vector(Vector((cnf.GRID_SIZE[0]-1)/2, (cnf.GRID_SIZE[1]-1)/2))
             self.__screen.center_x = pos.x
             self.__screen.center_y = pos.y
+        else:
+            if len(self.controllers) == 0:
+                self.__screen = arcade.Sprite(cnf.TEXTURES.DRAW, cnf.SIZE)
+                pos = to_global_vector(Vector((cnf.GRID_SIZE[0]-1)/2, (cnf.GRID_SIZE[1]-1)/2))
+                self.__screen.center_x = pos.x
+                self.__screen.center_y = pos.y
 
         for b in explose_list:
             self.explose(b)

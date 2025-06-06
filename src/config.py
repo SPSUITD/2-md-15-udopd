@@ -1,4 +1,4 @@
-SIZE = 0.3
+SIZE = 0.4
 SPRITE_SIZE = 128*SIZE
 GRID_SIZE = (17, 13)
 WINDOW_SIZE = (GRID_SIZE[0]*SPRITE_SIZE, (GRID_SIZE[1])*SPRITE_SIZE)
@@ -27,6 +27,7 @@ class TEXTURES:
     WIN1 = "sprites/1win.png"
     YOU_WIN = "sprites/youwin.png"
     YOU_LOSE = "sprites/youlose.png"
+    DRAW = "sprites/draw.png"
 
 class SYMBOLS:
     bomb = '@'

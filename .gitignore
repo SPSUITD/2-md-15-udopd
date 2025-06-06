@@ -1,4 +1,5 @@
 .venv
+reports
 src/__pycache__
 log.txt
 __pycache__
