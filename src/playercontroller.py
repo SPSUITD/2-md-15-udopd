@@ -128,7 +128,7 @@ class PlayerController:
                         self.direction.y = 0
                         self.player.set_position(Vector(self.player.position.x, to_global_vector(player_map_pos).y))
                 else:
-                    next_glob_pos = self.player.position
+                    next_glob_pos = to_global_vector(player_map_pos)
 
                 if abs(next_glob_pos.x - self.player.position.x) > 5:
                     self.direction.x = abs(next_glob_pos.x - self.player.position.x) / (next_glob_pos.x - self.player.position.x)
@@ -148,7 +148,7 @@ class PlayerController:
                         self.direction.x = 0
                         self.player.set_position(Vector(to_global_vector(player_map_pos).x, self.player.position.y))
                 else:
-                    next_glob_pos = self.player.position
+                    next_glob_pos = to_global_vector(player_map_pos)
 
                 if abs(next_glob_pos.y - self.player.position.y) > 5:
                     self.direction.y = abs(next_glob_pos.y - self.player.position.y) / (next_glob_pos.y - self.player.position.y)
