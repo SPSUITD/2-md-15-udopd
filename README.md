@@ -1,6 +1,6 @@
 #  B💣mberman!!! #
 
-Веб-игра на питоне на:
+Игра на питоне на:
 - python arcade-3.0.1 library
 - pyzmq-26.2.1 zmq-0.0.0
   
