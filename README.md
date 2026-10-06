@@ -16,7 +16,7 @@
 ## Установка ##
 Скачайте и распакуйте архив
 ```
-cd 2-md-15-ShtonDeLon-master
+cd 2-md-15-udopd-master
 ```
 ```
 pip install arcade
